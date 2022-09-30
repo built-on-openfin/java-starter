@@ -111,7 +111,7 @@ public class TestUtils {
         disconnectedLatch = new CountDownLatch(1);
         // if RVM needs to download the version of Runtime specified, waitTime may need to be increased for slow download
         int waitTime = 60;
-        String swaiTime = java.lang.System.getProperty("com.openfin.test.runtime.connect.wait.time");
+        String swaiTime = System.getProperty("com.openfin.test.runtime.connect.wait.time");
         if (swaiTime != null) {
             waitTime = Integer.parseInt(swaiTime);
         }
@@ -119,13 +119,13 @@ public class TestUtils {
         DesktopConnection desktopConnection = new DesktopConnection(connectionUuid);
         RuntimeConfiguration configuration = new RuntimeConfiguration();
         configuration.setRuntimeVersion(runtimeVersion);
-        String args = java.lang.System.getProperty("com.openfin.test.runtime.additionalRuntimeArguments");
+        String args = System.getProperty("com.openfin.test.runtime.additionalRuntimeArguments");
         if (args != null) {
             configuration.setAdditionalRuntimeArguments(args);
         }
         configuration.setDevToolsPort(9090);
-        configuration.setRdmURL(rdmUrl);
-        configuration.setRuntimeAssetURL(assetsUrl);
+//        configuration.setRdmURL(rdmUrl);
+//        configuration.setRuntimeAssetURL(assetsUrl);
         configuration.setLicenseKey("JavaAdapterJUnitTests");
         desktopConnection.connect(configuration, new DesktopStateListener() {
             @Override

@@ -1,16 +1,19 @@
+import java.lang.System;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.openfin.desktop.*;
+import com.openfin.desktop.ClientIdentity;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.openfin.desktop.ClientIdentity;
-import com.openfin.desktop.DesktopConnection;
 import com.openfin.desktop.interop.Context;
 import com.openfin.desktop.interop.ContextGroupInfo;
+import com.openfin.desktop.channel.*;
 
 public class InteropTest {
 	private static Logger logger = LoggerFactory.getLogger(InteropTest.class.getName());
@@ -22,13 +25,112 @@ public class InteropTest {
 		logger.debug("starting");
 		desktopConnection = TestUtils.setupConnection(DESKTOP_UUID);
 		this.platformId = platformId;
+		createChannelClient();
+	}
+
+//	public void createChannelClient() {
+//		desktopConnection.getChannel("platform-command").connect(new AsyncCallback<>() {
+//			@Override
+//			public void onSuccess(ChannelClient client) {
+//				//connected to provider, invoke action provided by the provider.
+//				client.register("getApps", new ChannelAction() {
+//					@Override
+//					public JSONObject invoke(String action, JSONObject payload, JSONObject senderIdentity) {
+//						// TODO Auto-generated method stub
+//						return null;
+//					}
+//				});
+//				//client.dispatch(payload, "sayHello", payload, null);
+//			}
+//		});
+//	}
+	public void createChannelClient() throws JSONException {
+		JSONObject payload = new JSONObject();
+		payload.put("name", "java example");
+		desktopConnection.getChannel("platform-command").connectAsync().thenAccept(client -> {
+			client.addChannelListener(new ChannelListener() {
+				@Override
+				public void onChannelConnect(ConnectionEvent connectionEvent) {
+				}
+
+				@Override
+				public void onChannelDisconnect(ConnectionEvent connectionEvent) {
+					logger.info("channel disconnected {}", connectionEvent.getChannelId());
+				}
+			});
+			client.register("getApps", new ChannelAction() {
+				@Override
+				public Object invoke(String action, Object payload, JSONObject senderIdentity) {
+					return null;
+				}
+			});
+
+//			client.dispatch("getValue", null, new AckListener() {
+//				@Override
+//				public void onSuccess(Ack ack) {
+//					try {
+//						logger.info("current value={}", ack.getJsonObject().getJSONObject("data").getJSONObject("result").getInt("value"));
+//					} catch (JSONException e) {
+//						e.printStackTrace();
+//					}
+//
+//					//got current value, do increment
+//					client.dispatch("increment", null, new AckListener() {
+//						@Override
+//						public void onSuccess(Ack ack) {
+//							try {
+//								logger.info("after invoking increment, value={}", ack.getJsonObject().getJSONObject("data").getJSONObject("result").getInt("value"));
+//							} catch (JSONException e) {
+//								e.printStackTrace();
+//							}
+//
+//							//let's do increatmentBy 10
+//							JSONObject payload = new JSONObject();
+//							try {
+//								payload.put("delta", 10);
+//							} catch (JSONException e) {
+//								e.printStackTrace();
+//							}
+//							client.dispatch("incrementBy", payload, new AckListener() {
+//								@Override
+//								public void onSuccess(Ack ack) {
+//									try {
+//										logger.info("after invoking incrementBy, value={}", ack.getJsonObject().getJSONObject("data").getJSONObject("result").getInt("value"));
+//									} catch (JSONException e) {
+//										e.printStackTrace();
+//									}
+//
+//									try {
+//										desktopConnection.disconnect();
+//									} catch (DesktopException e) {
+//										e.printStackTrace();
+//									}
+//								}
+//
+//								@Override
+//								public void onError(Ack ack) {
+//								}
+//							});
+//						}
+//
+//						@Override
+//						public void onError(Ack ack) {
+//						}
+//					});
+//				}
+//
+//				@Override
+//				public void onError(Ack ack) {
+//				}
+//			});
+		});
 	}
 
 	public void clientGetContextGroupInfo() throws Exception {
 		CompletionStage<ContextGroupInfo[]> getContextFuture = desktopConnection.getInterop().connect(this.platformId).thenCompose(client->{
 			return client.getContextGroups();
 		});
-		
+
 		ContextGroupInfo[] contextGroupInfo = getContextFuture.toCompletableFuture().get(100, TimeUnit.SECONDS);
 		for(ContextGroupInfo c : contextGroupInfo) {
 			//clientAddContextListener();
@@ -39,18 +141,18 @@ public class InteropTest {
 		CompletionStage<ContextGroupInfo> getContextFuture = desktopConnection.getInterop().connect(this.platformId).thenCompose(client->{
 			return client.getInfoForContextGroup("red");
 		});
-		
+
 		ContextGroupInfo contextGroupInfo = getContextFuture.toCompletableFuture().get(100, TimeUnit.SECONDS);
 		logger.debug("Context Group Info" + contextGroupInfo.toString());
 	}
-	
+
 	public void clientGetAllClientsInContextGroup() throws Exception {
 		CompletionStage<ClientIdentity[]> getContextFuture = desktopConnection.getInterop().connect(this.platformId).thenCompose(client->{
 			return client.joinContextGroup("red").thenCompose(v->{
 				return client.getAllClientsInContextGroup("red");
 			});
 		});
-		
+
 		ClientIdentity[] clientIdentity = getContextFuture.toCompletableFuture().get(10, TimeUnit.SECONDS);
 	}
 
@@ -70,15 +172,15 @@ public class InteropTest {
 				clientCntAfterRemove.set(clients.length);
 			});
 		});
-		
+
 		testFuture.toCompletableFuture().get(10, TimeUnit.SECONDS);
 	}
 
 	public void clientSetContext(String group, String ticker, String platformName) throws Exception {
-		Context context = new Context();	
-        JSONObject contextId = new JSONObject();
+		Context context = new Context();
+		JSONObject contextId = new JSONObject();
 		contextId.put("ticker", ticker);
-        context.setId(contextId);
+		context.setId(contextId);
 		context.setName("MyName");
 		context.setType("instrument");
 		CompletionStage<Void> setContextFuture = desktopConnection.getInterop().connect(platformName).thenCompose(client->{
@@ -88,20 +190,20 @@ public class InteropTest {
 				});
 			});
 		});
-		
+
 		setContextFuture.toCompletableFuture().get(10, TimeUnit.SECONDS);
 	}
 
 	public void clientAddContextListener() throws Exception {
-		Context context = new Context();	
-        JSONObject contextId = new JSONObject();
+		Context context = new Context();
+		JSONObject contextId = new JSONObject();
 		contextId.put("ticker", "WMT");
-        context.setId(contextId);
+		context.setId(contextId);
 		context.setName("MyName");
 		context.setType("instrument");
 
 		CompletableFuture<Context> listenerInvokedFuture = new CompletableFuture<>();
-		
+
 		desktopConnection.getInterop().connect(this.platformId).thenCompose(client->{
 			return client.addContextListener(ctx->{
 				listenerInvokedFuture.complete(ctx);
@@ -113,25 +215,25 @@ public class InteropTest {
 				return client.setContext(context);
 			});
 		});
-		
+
 		Context ctx = listenerInvokedFuture.toCompletableFuture().get(10, TimeUnit.SECONDS);
 	}
-	
+
 	public void joinAllGroups(String color, JavaTest JT) throws Exception {
-		CompletableFuture<Context> listenerInvokedFuture = new CompletableFuture<>();		
-		JSONObject retval = new JSONObject(); 
-			desktopConnection.getInterop().connect(platformId).thenCompose(client->{
-				return client.getContextGroups().thenCompose(groups->{
-					return client.joinContextGroup(color).thenCompose(v->{
-						return client.addContextListener(ctx->{
-							System.out.print(color + ctx.getId());
-							JT.updateTicker(ctx.getId());
-							listenerInvokedFuture.complete(ctx);
-						});
+		CompletableFuture<Context> listenerInvokedFuture = new CompletableFuture<>();
+		JSONObject retval = new JSONObject();
+		desktopConnection.getInterop().connect(platformId).thenCompose(client->{
+			return client.getContextGroups().thenCompose(groups->{
+				return client.joinContextGroup(color).thenCompose(v->{
+					return client.addContextListener(ctx->{
+						System.out.print(color + ctx.getId());
+						JT.updateTicker(ctx.getId());
+						listenerInvokedFuture.complete(ctx);
 					});
 				});
 			});
-		}
+		});
 	}
+}
 
 
