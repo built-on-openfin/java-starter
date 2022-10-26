@@ -3,6 +3,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.prefs.Preferences;
 
 import com.openfin.desktop.*;
 import com.openfin.desktop.ClientIdentity;
@@ -28,29 +29,14 @@ public class InteropTest {
 		createChannelClient();
 	}
 
-//	public void createChannelClient() {
-//		desktopConnection.getChannel("platform-command").connect(new AsyncCallback<>() {
-//			@Override
-//			public void onSuccess(ChannelClient client) {
-//				//connected to provider, invoke action provided by the provider.
-//				client.register("getApps", new ChannelAction() {
-//					@Override
-//					public JSONObject invoke(String action, JSONObject payload, JSONObject senderIdentity) {
-//						// TODO Auto-generated method stub
-//						return null;
-//					}
-//				});
-//				//client.dispatch(payload, "sayHello", payload, null);
-//			}
-//		});
-//	}
 	public void createChannelClient() throws JSONException {
 		JSONObject payload = new JSONObject();
-		payload.put("name", "java example");
+		payload.put("name", "java Starter");
 		desktopConnection.getChannel("platform-command").connectAsync().thenAccept(client -> {
 			client.addChannelListener(new ChannelListener() {
 				@Override
 				public void onChannelConnect(ConnectionEvent connectionEvent) {
+					logger.info("channel connected {}", connectionEvent.getChannelId());
 				}
 
 				@Override
@@ -61,68 +47,21 @@ public class InteropTest {
 			client.register("getApps", new ChannelAction() {
 				@Override
 				public Object invoke(String action, Object payload, JSONObject senderIdentity) {
+					Preferences a = FrameMonitor.prefs;
+
+					client.dispatch("getApps", null, new AckListener() {
+						@Override
+						public void onSuccess(Ack ack) {
+							logger.info("success");
+						}
+
+						@Override
+						public void onError(Ack ack) {
+						}
+					});
 					return null;
 				}
 			});
-
-//			client.dispatch("getValue", null, new AckListener() {
-//				@Override
-//				public void onSuccess(Ack ack) {
-//					try {
-//						logger.info("current value={}", ack.getJsonObject().getJSONObject("data").getJSONObject("result").getInt("value"));
-//					} catch (JSONException e) {
-//						e.printStackTrace();
-//					}
-//
-//					//got current value, do increment
-//					client.dispatch("increment", null, new AckListener() {
-//						@Override
-//						public void onSuccess(Ack ack) {
-//							try {
-//								logger.info("after invoking increment, value={}", ack.getJsonObject().getJSONObject("data").getJSONObject("result").getInt("value"));
-//							} catch (JSONException e) {
-//								e.printStackTrace();
-//							}
-//
-//							//let's do increatmentBy 10
-//							JSONObject payload = new JSONObject();
-//							try {
-//								payload.put("delta", 10);
-//							} catch (JSONException e) {
-//								e.printStackTrace();
-//							}
-//							client.dispatch("incrementBy", payload, new AckListener() {
-//								@Override
-//								public void onSuccess(Ack ack) {
-//									try {
-//										logger.info("after invoking incrementBy, value={}", ack.getJsonObject().getJSONObject("data").getJSONObject("result").getInt("value"));
-//									} catch (JSONException e) {
-//										e.printStackTrace();
-//									}
-//
-//									try {
-//										desktopConnection.disconnect();
-//									} catch (DesktopException e) {
-//										e.printStackTrace();
-//									}
-//								}
-//
-//								@Override
-//								public void onError(Ack ack) {
-//								}
-//							});
-//						}
-//
-//						@Override
-//						public void onError(Ack ack) {
-//						}
-//					});
-//				}
-//
-//				@Override
-//				public void onError(Ack ack) {
-//				}
-//			});
 		});
 	}
 

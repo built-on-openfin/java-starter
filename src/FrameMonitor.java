@@ -5,10 +5,10 @@ import java.awt.event.ComponentEvent;
 import java.util.prefs.Preferences;
 
 public class FrameMonitor {
-
+    static Preferences prefs;
   public static void registerFrame(JFrame frame, String frameUniqueId,
                                    int defaultX, int defaultY, int defaultW, int defaultH) {
-      Preferences prefs = Preferences.userRoot()
+      prefs = Preferences.userRoot()
                                      .node(FrameMonitor.class.getSimpleName() + "-" + frameUniqueId);
       frame.setLocation(getFrameLocation(prefs, defaultX, defaultY));
       frame.setSize(getFrameSize(prefs, defaultW, defaultH));
@@ -38,6 +38,10 @@ public class FrameMonitor {
       prefs.putInt("w", size.width);
       prefs.putInt("h", size.height);
   }
+
+    private static Preferences getPrefs() {
+        return prefs;
+    }
 
   private static Dimension getFrameSize(Preferences pref, int defaultW, int defaultH) {
       int w = pref.getInt("w", defaultW);

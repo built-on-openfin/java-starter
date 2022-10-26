@@ -39,7 +39,7 @@ public class TestUtils {
     static  {
         runtimeVersion = java.lang.System.getProperty("com.openfin.test.runtime.version");
         if (runtimeVersion == null) {
-            runtimeVersion = "alpha";
+            runtimeVersion = "stable";
         }
         logger.debug(String.format("Runtime version %s", runtimeVersion));
     }
