@@ -30,8 +30,7 @@ public class InteropTest {
 	}
 
 	public void createChannelClient() throws JSONException {
-		JSONObject payload = new JSONObject();
-		payload.put("name", "java Starter");
+
 		desktopConnection.getChannel("platform-command").connectAsync().thenAccept(client -> {
 			client.addChannelListener(new ChannelListener() {
 				@Override
@@ -47,9 +46,13 @@ public class InteropTest {
 			client.register("getApps", new ChannelAction() {
 				@Override
 				public Object invoke(String action, Object payload, JSONObject senderIdentity) {
-					Preferences a = FrameMonitor.prefs;
-
-					client.dispatch("getApps", null, new AckListener() {
+					JSONObject payloadWindows = new JSONObject();
+					try {
+						payloadWindows.put("windows", FrameMonitor.prefs);
+					} catch (JSONException e) {
+						throw new RuntimeException(e);
+					}
+					client.dispatch("getApps", payloadWindows, new AckListener() {
 						@Override
 						public void onSuccess(Ack ack) {
 							logger.info("success");
