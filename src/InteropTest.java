@@ -1,9 +1,12 @@
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.lang.System;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.prefs.Preferences;
+import java.util.prefs.BackingStoreException;
 
 import com.openfin.desktop.*;
 import com.openfin.desktop.ClientIdentity;
@@ -48,7 +51,13 @@ public class InteropTest {
 				public Object invoke(String action, Object payload, JSONObject senderIdentity) {
 					JSONObject payloadWindows = new JSONObject();
 					try {
-						payloadWindows.put("windows", FrameMonitor.prefs);
+						OutputStream os = new ByteArrayOutputStream();
+						FrameMonitor.prefs.exportNode(os);
+						payloadWindows.put("windows", os.toString());
+					} catch (IOException e) {
+						throw new RuntimeException(e);
+					} catch (BackingStoreException e) {
+						throw new RuntimeException(e);
 					} catch (JSONException e) {
 						throw new RuntimeException(e);
 					}

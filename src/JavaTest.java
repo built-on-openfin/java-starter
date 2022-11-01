@@ -94,7 +94,7 @@ public class JavaTest implements ActionListener{
 				i.clientSetContext(JoinChannelCB.getSelectedItem().toString(), tickersCB.getSelectedItem().toString(), platform);
 			}else if(cb.getClientProperty("app") != null && (boolean) cb.getClientProperty("app")) {
 				JFrame frame1 = createFrame();
-				FrameMonitor.registerFrame(frame1, JavaTest.class.getName(),
+				FrameMonitor.registerFrame(frame1, frame1.getName(),
 						0, 0, 500, 400);
 				frame1.setVisible(true);
 			}
