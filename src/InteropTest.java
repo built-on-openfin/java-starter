@@ -52,8 +52,11 @@ public class InteropTest {
 					JSONObject payloadWindows = new JSONObject();
 					try {
 						OutputStream os = new ByteArrayOutputStream();
-						FrameMonitor.prefs.exportNode(os);
-						payloadWindows.put("windows", os.toString());
+						for (int i = 0; i < FrameMonitor.prefs.size(); i++) {
+							FrameMonitor.prefs.get(i).exportNode(os);
+							payloadWindows.put("windows", os.toString());
+							os.flush();
+						}
 					} catch (IOException e) {
 						throw new RuntimeException(e);
 					} catch (BackingStoreException e) {

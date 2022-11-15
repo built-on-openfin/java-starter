@@ -68,8 +68,9 @@ public class JavaTest implements ActionListener{
 
 	}
 
-	private static JFrame createFrame() {
+	private static JFrame createFrame(String name) {
 		JFrame frame = new JFrame("Remembering Window Size and Location");
+		frame.setName(name);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		return frame;
 	}
@@ -93,7 +94,7 @@ public class JavaTest implements ActionListener{
 			} else if(cb.getClientProperty("ticker") != null && (boolean) cb.getClientProperty("ticker")) {
 				i.clientSetContext(JoinChannelCB.getSelectedItem().toString(), tickersCB.getSelectedItem().toString(), platform);
 			}else if(cb.getClientProperty("app") != null && (boolean) cb.getClientProperty("app")) {
-				JFrame frame1 = createFrame();
+				JFrame frame1 = createFrame(cb.getSelectedItem().toString());
 				FrameMonitor.registerFrame(frame1, frame1.getName(),
 						0, 0, 500, 400);
 				frame1.setVisible(true);

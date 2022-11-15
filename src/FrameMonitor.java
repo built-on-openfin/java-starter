@@ -2,20 +2,24 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.prefs.Preferences;
 
 public class FrameMonitor {
-    static Preferences prefs;
+    static List<Preferences> prefs =  new ArrayList<Preferences>();
+    static Preferences pref;
   public static void registerFrame(JFrame frame, String frameUniqueId,
                                    int defaultX, int defaultY, int defaultW, int defaultH) {
-      prefs = Preferences.userRoot()
-                                     .node(FrameMonitor.class.getSimpleName() + "-" + frameUniqueId);
-      frame.setLocation(getFrameLocation(prefs, defaultX, defaultY));
-      frame.setSize(getFrameSize(prefs, defaultW, defaultH));
+      pref = Preferences.userRoot()
+                                     .node(frameUniqueId);
+      frame.setLocation(getFrameLocation(pref, defaultX, defaultY));
+      frame.setSize(getFrameSize(pref, defaultW, defaultH));
       
       CoalescedEventUpdater updater = new CoalescedEventUpdater(400,
-              () -> updatePref(frame, prefs));
+              () -> updatePref(frame, pref));
 
+      prefs.add(pref);
       frame.addComponentListener(new ComponentAdapter() {
           @Override
           public void componentResized(ComponentEvent e) {
@@ -29,19 +33,15 @@ public class FrameMonitor {
       });
   }
 
-  private static void updatePref(JFrame frame, Preferences prefs) {
+  private static void updatePref(JFrame frame, Preferences pref) {
       System.out.println("Updating preferences");
       Point location = frame.getLocation();
-      prefs.putInt("x", location.x);
-      prefs.putInt("y", location.y);
+      pref.putInt("x", location.x);
+      pref.putInt("y", location.y);
       Dimension size = frame.getSize();
-      prefs.putInt("w", size.width);
-      prefs.putInt("h", size.height);
+      pref.putInt("w", size.width);
+      pref.putInt("h", size.height);
   }
-
-    private static Preferences getPrefs() {
-        return prefs;
-    }
 
   private static Dimension getFrameSize(Preferences pref, int defaultW, int defaultH) {
       int w = pref.getInt("w", defaultW);
