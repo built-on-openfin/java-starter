@@ -18,6 +18,7 @@ import com.openfin.desktop.interop.Context;
 import com.openfin.desktop.interop.ContextGroupInfo;
 import com.openfin.desktop.channel.*;
 import org.w3c.dom.Document;
+import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -88,12 +89,28 @@ public class InteropTest {
 				public Object invoke(String action, Object payload, JSONObject senderIdentity) {
 					FrameMonitor.prefs.clear();
 					String payloadString = payload.toString();
-					// remove the first and last character
-					payloadString = payloadString.substring(12, payloadString.length() - 2);
-					// remove a specific character
-					payloadString = payloadString.replace("\\", "");
-					payloadString = payloadString.replace("rn", "");
-
+					payloadString = payloadString.substring(149, payloadString.length() - 2);
+					payloadString = payloadString.replace("\\r\\n", "");
+					payloadString = payloadString.replace(" EXTERNAL_XML_VERSION=\\\"1.0\\\"", "");
+					// replace /" with "
+					payloadString = payloadString.replace("\\\"", "\"");
+					// replace \/ with /
+					payloadString = payloadString.replace("\\/", "/");
+					DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+					DocumentBuilder builder = null;
+					try {
+						builder = factory.newDocumentBuilder();
+					} catch (ParserConfigurationException e) {
+						e.printStackTrace();
+					}
+					Document doc = null;
+					try {
+						doc = builder.parse(new InputSource(new StringReader(payloadString)));
+					} catch (SAXException e) {
+						e.printStackTrace();
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
 					return null;
 				}
 			});
