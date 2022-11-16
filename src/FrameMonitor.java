@@ -34,7 +34,7 @@ public class FrameMonitor {
   }
 
   private static void updatePref(JFrame frame, Preferences pref) {
-      System.out.println("Updating preferences");
+              System.out.println("Updating preferences");
       Point location = frame.getLocation();
       pref.putInt("x", location.x);
       pref.putInt("y", location.y);

@@ -1,12 +1,11 @@
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.*;
 import java.lang.System;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.prefs.BackingStoreException;
+import java.util.prefs.InvalidPreferencesFormatException;
 
 import com.openfin.desktop.*;
 import com.openfin.desktop.ClientIdentity;
@@ -18,6 +17,12 @@ import org.slf4j.LoggerFactory;
 import com.openfin.desktop.interop.Context;
 import com.openfin.desktop.interop.ContextGroupInfo;
 import com.openfin.desktop.channel.*;
+import org.w3c.dom.Document;
+import org.xml.sax.SAXException;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 
 public class InteropTest {
 	private static Logger logger = LoggerFactory.getLogger(InteropTest.class.getName());
@@ -74,6 +79,21 @@ public class InteropTest {
 						public void onError(Ack ack) {
 						}
 					});
+					return null;
+				}
+			});
+
+			client.register("applySnapshot", new ChannelAction() {
+				@Override
+				public Object invoke(String action, Object payload, JSONObject senderIdentity) {
+					FrameMonitor.prefs.clear();
+					String payloadString = payload.toString();
+					// remove the first and last character
+					payloadString = payloadString.substring(12, payloadString.length() - 2);
+					// remove a specific character
+					payloadString = payloadString.replace("\\", "");
+					payloadString = payloadString.replace("rn", "");
+
 					return null;
 				}
 			});
