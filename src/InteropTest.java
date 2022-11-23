@@ -18,6 +18,8 @@ import com.openfin.desktop.interop.Context;
 import com.openfin.desktop.interop.ContextGroupInfo;
 import com.openfin.desktop.channel.*;
 import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
@@ -31,6 +33,7 @@ public class InteropTest {
 	private static final String DESKTOP_UUID = InteropTest.class.getName();
 	private static DesktopConnection desktopConnection;
 	private String platformId;
+	private JavaTest javaTest;
 	public void setup(String platformId) throws Exception {
 		logger.debug("starting");
 		desktopConnection = TestUtils.setupConnection(DESKTOP_UUID);
@@ -56,13 +59,12 @@ public class InteropTest {
 				@Override
 				public Object invoke(String action, Object payload, JSONObject senderIdentity) {
 					JSONObject payloadWindows = new JSONObject();
+
 					try {
 						OutputStream os = new ByteArrayOutputStream();
-						for (int i = 0; i < FrameMonitor.prefs.size(); i++) {
-							FrameMonitor.prefs.get(i).exportNode(os);
-							payloadWindows.put("windows", os.toString());
-							os.flush();
-						}
+						FrameMonitor.pref.exportSubtree(os);
+						payloadWindows.put("windows", os.toString());
+						os.flush();
 					} catch (IOException e) {
 						throw new RuntimeException(e);
 					} catch (BackingStoreException e) {
@@ -87,15 +89,14 @@ public class InteropTest {
 			client.register("applySnapshot", new ChannelAction() {
 				@Override
 				public Object invoke(String action, Object payload, JSONObject senderIdentity) {
-					FrameMonitor.prefs.clear();
+					//FrameMonitor.prefs.clear();
 					String payloadString = payload.toString();
-					payloadString = payloadString.substring(149, payloadString.length() - 2);
+					payloadString = payloadString.substring(12, payloadString.length() - 2);
 					payloadString = payloadString.replace("\\r\\n", "");
-					payloadString = payloadString.replace(" EXTERNAL_XML_VERSION=\\\"1.0\\\"", "");
-					// replace /" with "
 					payloadString = payloadString.replace("\\\"", "\"");
-					// replace \/ with /
 					payloadString = payloadString.replace("\\/", "/");
+					// remove all occurance of <map/> tag
+					payloadString = payloadString.replaceAll("<map/>", "");
 					DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
 					DocumentBuilder builder = null;
 					try {
@@ -103,9 +104,15 @@ public class InteropTest {
 					} catch (ParserConfigurationException e) {
 						e.printStackTrace();
 					}
-					Document doc = null;
+
 					try {
-						doc = builder.parse(new InputSource(new StringReader(payloadString)));
+					// convert payloadstring to xml document
+					Document doc = builder.parse(new InputSource(new StringReader(payloadString)));
+					// get all map tags
+					NodeList apps =	doc.getElementsByTagName("root").item(0).getChildNodes().item(1).getChildNodes();
+					for (int i = 3; i < apps.getLength(); i += 2) {
+						javaTest.createFrame(apps.item(i).getAttributes().item(0).getNodeValue());
+					}
 					} catch (SAXException e) {
 						e.printStackTrace();
 					} catch (IOException e) {
@@ -213,6 +220,7 @@ public class InteropTest {
 	public void joinAllGroups(String color, JavaTest JT) throws Exception {
 		CompletableFuture<Context> listenerInvokedFuture = new CompletableFuture<>();
 		JSONObject retval = new JSONObject();
+		javaTest = JT;
 		desktopConnection.getInterop().connect(platformId).thenCompose(client->{
 			return client.getContextGroups().thenCompose(groups->{
 				return client.joinContextGroup(color).thenCompose(v->{

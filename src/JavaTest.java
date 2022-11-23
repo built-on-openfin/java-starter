@@ -68,7 +68,7 @@ public class JavaTest implements ActionListener{
 
 	}
 
-	private static JFrame createFrame(String name) {
+	public static JFrame createFrame(String name) {
 		JFrame frame = new JFrame("Remembering Window Size and Location");
 		frame.setName(name);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
