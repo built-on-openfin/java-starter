@@ -68,11 +68,14 @@ public class JavaTest implements ActionListener{
 
 	}
 
-	public static JFrame createFrame(String name) {
+	public static void createFrame(String name, int x, int y, int w, int h) {
 		JFrame frame = new JFrame("Remembering Window Size and Location");
+		// set the frame's location and size
+		frame.setBounds(x, y, w, h);
 		frame.setName(name);
-		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		return frame;
+		FrameMonitor.registerFrame(frame, frame.getName(),
+				x, y, w, h);
+		frame.setVisible(true);
 	}
 
 	public static void main(String[] args) throws Exception {
@@ -94,10 +97,7 @@ public class JavaTest implements ActionListener{
 			} else if(cb.getClientProperty("ticker") != null && (boolean) cb.getClientProperty("ticker")) {
 				i.clientSetContext(JoinChannelCB.getSelectedItem().toString(), tickersCB.getSelectedItem().toString(), platform);
 			}else if(cb.getClientProperty("app") != null && (boolean) cb.getClientProperty("app")) {
-				JFrame frame1 = createFrame(cb.getSelectedItem().toString());
-				FrameMonitor.registerFrame(frame1, frame1.getName(),
-						0, 0, 500, 400);
-				frame1.setVisible(true);
+				createFrame(cb.getSelectedItem().toString(), 0, 0, 400, 400);
 			}
 		} catch (Exception e1) {
 			e1.printStackTrace();

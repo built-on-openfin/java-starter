@@ -111,7 +111,11 @@ public class InteropTest {
 					// get all map tags
 					NodeList apps =	doc.getElementsByTagName("root").item(0).getChildNodes().item(1).getChildNodes();
 					for (int i = 3; i < apps.getLength(); i += 2) {
-						javaTest.createFrame(apps.item(i).getAttributes().item(0).getNodeValue());
+						String x = apps.item(i).getChildNodes().item(1).getChildNodes().item(1).getAttributes().item(1).getNodeValue();
+						String y = apps.item(i).getChildNodes().item(1).getChildNodes().item(3).getAttributes().item(1).getNodeValue();
+						String width = apps.item(i).getChildNodes().item(1).getChildNodes().item(5).getAttributes().item(1).getNodeValue();
+						String height = apps.item(i).getChildNodes().item(1).getChildNodes().item(7).getAttributes().item(1).getNodeValue();
+						javaTest.createFrame(apps.item(i).getAttributes().item(0).getNodeValue(), Integer.parseInt(x), Integer.parseInt(y), Integer.parseInt(width), Integer.parseInt(height));
 					}
 					} catch (SAXException e) {
 						e.printStackTrace();
