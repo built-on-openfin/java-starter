@@ -5,10 +5,9 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.prefs.BackingStoreException;
-import java.util.prefs.InvalidPreferencesFormatException;
-
 import com.openfin.desktop.*;
 import com.openfin.desktop.ClientIdentity;
+import com.openfin.desktop.snapshot.SnapshotSourceProvider;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -18,7 +17,6 @@ import com.openfin.desktop.interop.Context;
 import com.openfin.desktop.interop.ContextGroupInfo;
 import com.openfin.desktop.channel.*;
 import org.w3c.dom.Document;
-import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
@@ -27,11 +25,11 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
-public class InteropTest {
+public class InteropTest implements SnapshotSourceProvider {
 	private static Logger logger = LoggerFactory.getLogger(InteropTest.class.getName());
 
 	private static final String DESKTOP_UUID = InteropTest.class.getName();
-	private static DesktopConnection desktopConnection;
+	public static DesktopConnection desktopConnection;
 	private String platformId;
 	private JavaTest javaTest;
 	public void setup(String platformId) throws Exception {
@@ -39,6 +37,61 @@ public class InteropTest {
 		desktopConnection = TestUtils.setupConnection(DESKTOP_UUID);
 		this.platformId = platformId;
 		createChannelClient();
+	}
+
+
+	@Override
+	public JSONObject getSnapshot() {
+		JSONObject payloadWindows = new JSONObject();
+		try {
+			OutputStream os = new ByteArrayOutputStream();
+			FrameMonitor.pref.exportSubtree(os);
+			payloadWindows.put("windows", os.toString());
+			os.flush();
+			return payloadWindows;
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		} catch (BackingStoreException e) {
+			throw new RuntimeException(e);
+		} catch (JSONException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@Override
+	public void applySnapshot(JSONObject snapshot) {
+		String payloadString = snapshot.toString();
+		payloadString = payloadString.substring(12, payloadString.length() - 2);
+		payloadString = payloadString.replace("\\r\\n", "");
+		payloadString = payloadString.replace("\\\"", "\"");
+		payloadString = payloadString.replace("\\/", "/");
+		// remove all occurance of <map/> tag
+		payloadString = payloadString.replaceAll("<map/>", "");
+		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+		DocumentBuilder builder = null;
+		try {
+			builder = factory.newDocumentBuilder();
+		} catch (ParserConfigurationException e) {
+			e.printStackTrace();
+		}
+
+		try {
+			// convert payloadstring to xml document
+			Document doc = builder.parse(new InputSource(new StringReader(payloadString)));
+			// get all map tags
+			NodeList apps =	doc.getElementsByTagName("root").item(0).getChildNodes().item(1).getChildNodes();
+			for (int i = 3; i < apps.getLength(); i += 2) {
+				String x = apps.item(i).getChildNodes().item(1).getChildNodes().item(1).getAttributes().item(1).getNodeValue();
+				String y = apps.item(i).getChildNodes().item(1).getChildNodes().item(3).getAttributes().item(1).getNodeValue();
+				String width = apps.item(i).getChildNodes().item(1).getChildNodes().item(5).getAttributes().item(1).getNodeValue();
+				String height = apps.item(i).getChildNodes().item(1).getChildNodes().item(7).getAttributes().item(1).getNodeValue();
+				javaTest.createFrame(apps.item(i).getAttributes().item(0).getNodeValue(), Integer.parseInt(x), Integer.parseInt(y), Integer.parseInt(width), Integer.parseInt(height));
+			}
+		} catch (SAXException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 	public void createChannelClient() throws JSONException {
@@ -237,6 +290,7 @@ public class InteropTest {
 			});
 		});
 	}
+
 }
 
 

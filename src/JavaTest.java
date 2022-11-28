@@ -1,3 +1,4 @@
+import com.openfin.desktop.snapshot.SnapshotSource;
 import org.json.JSONObject;
 
 import javax.swing.*;
@@ -64,8 +65,6 @@ public class JavaTest implements ActionListener{
 
 		frame.pack();
 		frame.setVisible(true);
-
-
 	}
 
 	public static void createFrame(String name, int x, int y, int w, int h) {
@@ -80,9 +79,10 @@ public class JavaTest implements ActionListener{
 
 	public static void main(String[] args) throws Exception {
 		JavaTest jt = new JavaTest();
-
 		try {
 			i.setup(jt.platform);
+			SnapshotSource snapshotSource = new SnapshotSource(i.desktopConnection);
+			snapshotSource.initSnapshotSourceProviderAsync("JavaTest", i);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
