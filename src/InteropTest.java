@@ -1,5 +1,7 @@
 import java.io.*;
 import java.lang.System;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
@@ -8,6 +10,7 @@ import java.util.prefs.BackingStoreException;
 import com.openfin.desktop.*;
 import com.openfin.desktop.ClientIdentity;
 import com.openfin.desktop.snapshot.SnapshotSourceProvider;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -28,13 +31,14 @@ import javax.xml.parsers.ParserConfigurationException;
 public class InteropTest implements SnapshotSourceProvider {
 	private static Logger logger = LoggerFactory.getLogger(InteropTest.class.getName());
 
-	private static final String DESKTOP_UUID = InteropTest.class.getName();
+
 	public static DesktopConnection desktopConnection;
 	private String platformId;
 	private JavaTest javaTest;
+
 	public void setup(String platformId) throws Exception {
 		logger.debug("starting");
-		desktopConnection = TestUtils.setupConnection(DESKTOP_UUID);
+		desktopConnection = TestUtils.setupConnection("interop-test-desktop");
 		this.platformId = platformId;
 		createChannelClient();
 	}
@@ -96,7 +100,7 @@ public class InteropTest implements SnapshotSourceProvider {
 
 	public void createChannelClient() throws JSONException {
 
-		desktopConnection.getChannel("platform-command").connectAsync().thenAccept(client -> {
+		desktopConnection.getChannel("customize-workspace-workspace-connection").connectAsync().thenAccept(client -> {
 			client.addChannelListener(new ChannelListener() {
 				@Override
 				public void onChannelConnect(ConnectionEvent connectionEvent) {
@@ -108,16 +112,45 @@ public class InteropTest implements SnapshotSourceProvider {
 					logger.info("channel disconnected {}", connectionEvent.getChannelId());
 				}
 			});
+
 			client.register("getApps", new ChannelAction() {
 				@Override
 				public Object invoke(String action, Object payload, JSONObject senderIdentity) {
-					JSONObject payloadWindows = new JSONObject();
-
+					JSONArray appsArray = new JSONArray();
+					List<App> appsList = new ArrayList<App>();
 					try {
 						OutputStream os = new ByteArrayOutputStream();
 						FrameMonitor.pref.exportSubtree(os);
-						payloadWindows.put("windows", os.toString());
-						os.flush();
+
+						String payloadString = os.toString();
+						payloadString = payloadString.replace("\\r\\n", "");
+						payloadString = payloadString.replace("\\\"", "\"");
+						payloadString = payloadString.replace("\\/", "/");
+						payloadString = payloadString.replaceAll("<map/>", "");
+						DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+						DocumentBuilder builder = null;
+						try {
+							builder = factory.newDocumentBuilder();
+						} catch (ParserConfigurationException e) {
+							e.printStackTrace();
+						}
+
+						try {
+							Document doc = builder.parse(new InputSource(new StringReader(payloadString)));
+							NodeList apps =	doc.getElementsByTagName("root").item(0).getChildNodes().item(1).getChildNodes();
+							for (int i = 3; i < apps.getLength(); i += 2) {
+								JSONObject appObject = new JSONObject();
+								appObject.put("appId", apps.item(i).getAttributes().item(0).getNodeValue());
+								appObject.put("title", apps.item(i).getAttributes().item(0).getNodeValue());
+								appObject.put("description", apps.item(i).getAttributes().item(0).getNodeValue());
+								appObject.put("manifestType", "connection");
+								appsArray.put(appObject);
+							}
+						} catch (SAXException e) {
+							e.printStackTrace();
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
 					} catch (IOException e) {
 						throw new RuntimeException(e);
 					} catch (BackingStoreException e) {
@@ -125,17 +158,7 @@ public class InteropTest implements SnapshotSourceProvider {
 					} catch (JSONException e) {
 						throw new RuntimeException(e);
 					}
-					client.dispatch("getApps", payloadWindows, new AckListener() {
-						@Override
-						public void onSuccess(Ack ack) {
-							logger.info("success");
-						}
-
-						@Override
-						public void onError(Ack ack) {
-						}
-					});
-					return null;
+					return appsArray;
 				}
 			});
 
