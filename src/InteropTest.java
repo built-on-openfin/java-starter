@@ -117,7 +117,6 @@ public class InteropTest implements SnapshotSourceProvider {
 				@Override
 				public Object invoke(String action, Object payload, JSONObject senderIdentity) {
 					JSONArray appsArray = new JSONArray();
-					List<App> appsList = new ArrayList<App>();
 					try {
 						OutputStream os = new ByteArrayOutputStream();
 						FrameMonitor.pref.exportSubtree(os);
