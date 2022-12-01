@@ -161,48 +161,55 @@ public class InteropTest implements SnapshotSourceProvider {
 				}
 			});
 
-			client.register("applySnapshot", new ChannelAction() {
+			client.register("launchApp", new ChannelAction() {
 				@Override
 				public Object invoke(String action, Object payload, JSONObject senderIdentity) {
-					//FrameMonitor.prefs.clear();
-					String payloadString = payload.toString();
-					payloadString = payloadString.substring(12, payloadString.length() - 2);
-					payloadString = payloadString.replace("\\r\\n", "");
-					payloadString = payloadString.replace("\\\"", "\"");
-					payloadString = payloadString.replace("\\/", "/");
-					// remove all occurance of <map/> tag
-					payloadString = payloadString.replaceAll("<map/>", "");
-					DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-					DocumentBuilder builder = null;
 					try {
-						builder = factory.newDocumentBuilder();
-					} catch (ParserConfigurationException e) {
-						e.printStackTrace();
-					}
+						OutputStream os = new ByteArrayOutputStream();
+						FrameMonitor.pref.exportSubtree(os);
 
-					try {
-					// convert payloadstring to xml document
-					Document doc = builder.parse(new InputSource(new StringReader(payloadString)));
-					// get all map tags
-					NodeList apps =	doc.getElementsByTagName("root").item(0).getChildNodes().item(1).getChildNodes();
-					for (int i = 3; i < apps.getLength(); i += 2) {
-						String x = apps.item(i).getChildNodes().item(1).getChildNodes().item(1).getAttributes().item(1).getNodeValue();
-						String y = apps.item(i).getChildNodes().item(1).getChildNodes().item(3).getAttributes().item(1).getNodeValue();
-						String width = apps.item(i).getChildNodes().item(1).getChildNodes().item(5).getAttributes().item(1).getNodeValue();
-						String height = apps.item(i).getChildNodes().item(1).getChildNodes().item(7).getAttributes().item(1).getNodeValue();
-						javaTest.createFrame(apps.item(i).getAttributes().item(0).getNodeValue(), Integer.parseInt(x), Integer.parseInt(y), Integer.parseInt(width), Integer.parseInt(height));
-					}
-					} catch (SAXException e) {
-						e.printStackTrace();
+						String payloadString = os.toString();
+						payloadString = payloadString.replace("\\r\\n", "");
+						payloadString = payloadString.replace("\\\"", "\"");
+						payloadString = payloadString.replace("\\/", "/");
+						payloadString = payloadString.replaceAll("<map/>", "");
+						DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+						DocumentBuilder builder = null;
+						try {
+							builder = factory.newDocumentBuilder();
+						} catch (ParserConfigurationException e) {
+							e.printStackTrace();
+						}
+
+						try {
+							Document doc = builder.parse(new InputSource(new StringReader(payloadString)));
+							NodeList apps =	doc.getElementsByTagName("root").item(0).getChildNodes().item(1).getChildNodes();
+							for (int i = 3; i < apps.getLength(); i += 2) {
+								if (((JSONObject) payload).get("appId").equals(apps.item(i).getAttributes().item(0).getNodeValue())) {
+									String x = apps.item(i).getChildNodes().item(1).getChildNodes().item(1).getAttributes().item(1).getNodeValue();
+									String y = apps.item(i).getChildNodes().item(1).getChildNodes().item(3).getAttributes().item(1).getNodeValue();
+									String width = apps.item(i).getChildNodes().item(1).getChildNodes().item(5).getAttributes().item(1).getNodeValue();
+									String height = apps.item(i).getChildNodes().item(1).getChildNodes().item(7).getAttributes().item(1).getNodeValue();
+									javaTest.createFrame(apps.item(i).getAttributes().item(0).getNodeValue(), Integer.parseInt(x), Integer.parseInt(y), Integer.parseInt(width), Integer.parseInt(height));
+								}
+							}
+						} catch (SAXException e) {
+							e.printStackTrace();
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
 					} catch (IOException e) {
-						e.printStackTrace();
+						throw new RuntimeException(e);
+					} catch (BackingStoreException e) {
+						throw new RuntimeException(e);
+					} catch (JSONException e) {
+						throw new RuntimeException(e);
 					}
 					return null;
 				}
 			});
 		});
 	}
-
 	public void clientGetContextGroupInfo() throws Exception {
 		CompletionStage<ContextGroupInfo[]> getContextFuture = desktopConnection.getInterop().connect(this.platformId).thenCompose(client->{
 			return client.getContextGroups();
