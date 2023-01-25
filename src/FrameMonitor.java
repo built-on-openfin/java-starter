@@ -2,12 +2,14 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.prefs.Preferences;
 
 public class FrameMonitor {
     static Preferences pref;
+
+    public static void init() {
+        pref = Preferences.userRoot().node("FrameMonitor");
+    }
   public static void registerFrame(JFrame frame, String frameUniqueId,
                                    int defaultX, int defaultY, int defaultW, int defaultH) {
       pref = Preferences.userRoot().node("FrameMonitor");

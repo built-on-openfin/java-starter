@@ -1,7 +1,5 @@
 import java.io.*;
 import java.lang.System;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
@@ -40,19 +38,52 @@ public class InteropTest implements SnapshotSourceProvider {
 		logger.debug("starting");
 		desktopConnection = TestUtils.setupConnection("interop-test-desktop");
 		this.platformId = platformId;
+		FrameMonitor.init();
 		createChannelClient();
 	}
 
 
 	@Override
 	public JSONObject getSnapshot() {
-		JSONObject payloadWindows = new JSONObject();
+		JSONObject snapshot = new JSONObject();
+		JSONArray appsArray = new JSONArray();
 		try {
 			OutputStream os = new ByteArrayOutputStream();
+
 			FrameMonitor.pref.exportSubtree(os);
-			payloadWindows.put("windows", os.toString());
-			os.flush();
-			return payloadWindows;
+
+			String payloadString = os.toString();
+			payloadString = payloadString.replace("\\r\\n", "");
+			payloadString = payloadString.replace("\\\"", "\"");
+			payloadString = payloadString.replace("\\/", "/");
+			payloadString = payloadString.replaceAll("<map/>", "");
+			DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+			DocumentBuilder builder = null;
+			try {
+				builder = factory.newDocumentBuilder();
+			} catch (ParserConfigurationException e) {
+				e.printStackTrace();
+			}
+
+			try {
+				Document doc = builder.parse(new InputSource(new StringReader(payloadString)));
+				NodeList apps = doc.getElementsByTagName("root").item(0).getChildNodes().item(1).getChildNodes();
+				for (int i = 3; i < apps.getLength(); i += 2) {
+					JSONObject appObject = new JSONObject();
+					appObject.put("appId", apps.item(i).getAttributes().item(0).getNodeValue());
+					appObject.put("title", apps.item(i).getAttributes().item(0).getNodeValue());
+					appObject.put("description", apps.item(i).getAttributes().item(0).getNodeValue());
+					appObject.put("manifestType", "connection");
+					appsArray.put(appObject);
+				}
+			} catch (SAXException e) {
+				e.printStackTrace();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+
+			return new JSONObject("{ snapshot: " + appsArray.toString() + " }");
+
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		} catch (BackingStoreException e) {
@@ -64,37 +95,55 @@ public class InteropTest implements SnapshotSourceProvider {
 
 	@Override
 	public void applySnapshot(JSONObject snapshot) {
-		String payloadString = snapshot.toString();
-		payloadString = payloadString.substring(12, payloadString.length() - 2);
-		payloadString = payloadString.replace("\\r\\n", "");
-		payloadString = payloadString.replace("\\\"", "\"");
-		payloadString = payloadString.replace("\\/", "/");
-		// remove all occurance of <map/> tag
-		payloadString = payloadString.replaceAll("<map/>", "");
-		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-		DocumentBuilder builder = null;
 		try {
-			builder = factory.newDocumentBuilder();
-		} catch (ParserConfigurationException e) {
-			e.printStackTrace();
-		}
+			OutputStream os = new ByteArrayOutputStream();
+			FrameMonitor.pref.exportSubtree(os);
 
-		try {
-			// convert payloadstring to xml document
-			Document doc = builder.parse(new InputSource(new StringReader(payloadString)));
-			// get all map tags
-			NodeList apps =	doc.getElementsByTagName("root").item(0).getChildNodes().item(1).getChildNodes();
-			for (int i = 3; i < apps.getLength(); i += 2) {
-				String x = apps.item(i).getChildNodes().item(1).getChildNodes().item(1).getAttributes().item(1).getNodeValue();
-				String y = apps.item(i).getChildNodes().item(1).getChildNodes().item(3).getAttributes().item(1).getNodeValue();
-				String width = apps.item(i).getChildNodes().item(1).getChildNodes().item(5).getAttributes().item(1).getNodeValue();
-				String height = apps.item(i).getChildNodes().item(1).getChildNodes().item(7).getAttributes().item(1).getNodeValue();
-				javaTest.createFrame(apps.item(i).getAttributes().item(0).getNodeValue(), Integer.parseInt(x), Integer.parseInt(y), Integer.parseInt(width), Integer.parseInt(height));
+			String payloadString = os.toString();
+			payloadString = payloadString.replace("\\r\\n", "");
+			payloadString = payloadString.replace("\\\"", "\"");
+			payloadString = payloadString.replace("\\/", "/");
+			payloadString = payloadString.replaceAll("<map/>", "");
+			DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+			DocumentBuilder builder = null;
+			try {
+				builder = factory.newDocumentBuilder();
+			} catch (ParserConfigurationException e) {
+				e.printStackTrace();
 			}
-		} catch (SAXException e) {
-			e.printStackTrace();
+
+			JSONArray ja = (JSONArray) snapshot.get("snapshot");
+			String[] sApps = new String[ja.length()];
+			for (int i = 0; i < ja.length(); i++) {
+				JSONObject jo = (JSONObject) ja.get(i);
+				sApps[i] = jo.getString("appId");
+			}
+
+			try {
+				Document doc = builder.parse(new InputSource(new StringReader(payloadString)));
+				NodeList apps =	doc.getElementsByTagName("root").item(0).getChildNodes().item(1).getChildNodes();
+				for (int i = 3; i < apps.getLength(); i += 2) {
+					for (int j = 0; j < sApps.length; j++) {
+						if (sApps[j].equals(apps.item(i).getAttributes().item(0).getNodeValue())) {
+							String x = apps.item(i).getChildNodes().item(1).getChildNodes().item(1).getAttributes().item(1).getNodeValue();
+							String y = apps.item(i).getChildNodes().item(1).getChildNodes().item(3).getAttributes().item(1).getNodeValue();
+							String width = apps.item(i).getChildNodes().item(1).getChildNodes().item(5).getAttributes().item(1).getNodeValue();
+							String height = apps.item(i).getChildNodes().item(1).getChildNodes().item(7).getAttributes().item(1).getNodeValue();
+							javaTest.createFrame(apps.item(i).getAttributes().item(0).getNodeValue(), Integer.parseInt(x), Integer.parseInt(y), Integer.parseInt(width), Integer.parseInt(height));
+						}
+					}
+				}
+			} catch (SAXException e) {
+				e.printStackTrace();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		} catch (IOException e) {
-			e.printStackTrace();
+			throw new RuntimeException(e);
+		} catch (BackingStoreException e) {
+			throw new RuntimeException(e);
+		} catch (JSONException e) {
+			throw new RuntimeException(e);
 		}
 	}
 

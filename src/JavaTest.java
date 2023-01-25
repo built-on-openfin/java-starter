@@ -82,7 +82,7 @@ public class JavaTest implements ActionListener{
 		try {
 			i.setup(jt.platform);
 			SnapshotSource snapshotSource = new SnapshotSource(i.desktopConnection);
-			snapshotSource.initSnapshotSourceProviderAsync("customize-workspace", i);
+			snapshotSource.initSnapshotSourceProviderAsync("interop-test-desktop", i);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
