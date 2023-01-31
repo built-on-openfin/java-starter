@@ -2,6 +2,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.util.prefs.Preferences;
 
 public class FrameMonitor {
@@ -14,6 +16,7 @@ public class FrameMonitor {
                                    int defaultX, int defaultY, int defaultW, int defaultH) {
       pref = Preferences.userRoot().node("FrameMonitor");
 
+      pref.node(frame.getName()).putInt("open", 1);
       CoalescedEventUpdater updater = new CoalescedEventUpdater(400,
               () -> updatePref(frame, pref));
 
@@ -27,6 +30,12 @@ public class FrameMonitor {
           public void componentMoved(ComponentEvent e) {
               updater.update();
           }
+
+          @Override
+          public void componentHidden(ComponentEvent e) {
+              FrameMonitor.pref.node(frame.getName()).putInt("open", 0);
+          }
+
       });
   }
 

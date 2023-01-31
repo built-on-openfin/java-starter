@@ -72,6 +72,11 @@ public class InteropTest implements SnapshotSourceProvider {
 					JSONObject appObject = new JSONObject();
 					appObject.put("appId", apps.item(i).getAttributes().item(0).getNodeValue());
 					appObject.put("title", apps.item(i).getAttributes().item(0).getNodeValue());
+					appObject.put("x", apps.item(i).getChildNodes().item(1).getChildNodes().item(1).getAttributes().item(1).getNodeValue());
+					appObject.put("y", apps.item(i).getChildNodes().item(1).getChildNodes().item(3).getAttributes().item(1).getNodeValue());
+					appObject.put("w", apps.item(i).getChildNodes().item(1).getChildNodes().item(5).getAttributes().item(1).getNodeValue());
+					appObject.put("h", apps.item(i).getChildNodes().item(1).getChildNodes().item(7).getAttributes().item(1).getNodeValue());
+					appObject.put("open", apps.item(i).getChildNodes().item(1).getChildNodes().item(9).getAttributes().item(1).getNodeValue());
 					appObject.put("description", apps.item(i).getAttributes().item(0).getNodeValue());
 					appObject.put("manifestType", "connection");
 					appsArray.put(appObject);
@@ -113,23 +118,16 @@ public class InteropTest implements SnapshotSourceProvider {
 			}
 
 			JSONArray ja = (JSONArray) snapshot.get("snapshot");
-			String[] sApps = new String[ja.length()];
-			for (int i = 0; i < ja.length(); i++) {
-				JSONObject jo = (JSONObject) ja.get(i);
-				sApps[i] = jo.getString("appId");
-			}
-
 			try {
 				Document doc = builder.parse(new InputSource(new StringReader(payloadString)));
 				NodeList apps =	doc.getElementsByTagName("root").item(0).getChildNodes().item(1).getChildNodes();
+				JSONObject jo;
 				for (int i = 3; i < apps.getLength(); i += 2) {
-					for (int j = 0; j < sApps.length; j++) {
-						if (sApps[j].equals(apps.item(i).getAttributes().item(0).getNodeValue())) {
-							String x = apps.item(i).getChildNodes().item(1).getChildNodes().item(1).getAttributes().item(1).getNodeValue();
-							String y = apps.item(i).getChildNodes().item(1).getChildNodes().item(3).getAttributes().item(1).getNodeValue();
-							String width = apps.item(i).getChildNodes().item(1).getChildNodes().item(5).getAttributes().item(1).getNodeValue();
-							String height = apps.item(i).getChildNodes().item(1).getChildNodes().item(7).getAttributes().item(1).getNodeValue();
-							javaTest.createFrame(apps.item(i).getAttributes().item(0).getNodeValue(), Integer.parseInt(x), Integer.parseInt(y), Integer.parseInt(width), Integer.parseInt(height));
+					for (int j = 0; j < ja.length(); j++) {
+						jo = (JSONObject) ja.get(j);
+						if (jo.getString("appId").equals(apps.item(i).getAttributes().item(0).getNodeValue())) {
+							if(Integer.parseInt(jo.getString("open")) == 1)
+								javaTest.createFrame(apps.item(i).getAttributes().item(0).getNodeValue(), Integer.parseInt(jo.getString("x")), Integer.parseInt(jo.getString("y")), Integer.parseInt(jo.getString("w")), Integer.parseInt(jo.getString("h")));
 						}
 					}
 				}
