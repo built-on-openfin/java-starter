@@ -5,10 +5,15 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionListener;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class JavaTest implements ActionListener{
 	static InteropTest i = new InteropTest();
 	JLabel ticker = new JLabel("Empty");
+
+	static List<JFrame> windows = new ArrayList<JFrame>();
+
 	JComboBox tickersCB;
 	JComboBox JoinChannelCB;
 	String platform;
@@ -74,7 +79,15 @@ public class JavaTest implements ActionListener{
 		frame.setName(name);
 		FrameMonitor.registerFrame(frame, frame.getName(),
 				x, y, w, h);
+		windows.add(frame);
 		frame.setVisible(true);
+	}
+
+	public static void CloseAllWindows(){
+		for (JFrame w:windows) {
+			w.setVisible(false);
+			w.dispose();
+		}
 	}
 
 	public static void main(String[] args) throws Exception {

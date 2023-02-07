@@ -42,7 +42,6 @@ public class InteropTest implements SnapshotSourceProvider {
 		createChannelClient();
 	}
 
-
 	@Override
 	public JSONObject getSnapshot() {
 		JSONObject snapshot = new JSONObject();
@@ -101,6 +100,7 @@ public class InteropTest implements SnapshotSourceProvider {
 	@Override
 	public void applySnapshot(JSONObject snapshot) {
 		try {
+			javaTest.CloseAllWindows();
 			OutputStream os = new ByteArrayOutputStream();
 			FrameMonitor.pref.exportSubtree(os);
 
