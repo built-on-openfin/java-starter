@@ -28,8 +28,6 @@ import javax.xml.parsers.ParserConfigurationException;
 
 public class InteropTest implements SnapshotSourceProvider {
 	private static Logger logger = LoggerFactory.getLogger(InteropTest.class.getName());
-
-
 	public static DesktopConnection desktopConnection;
 	private String platformId;
 	private JavaTest javaTest;
@@ -44,7 +42,6 @@ public class InteropTest implements SnapshotSourceProvider {
 
 	@Override
 	public JSONObject getSnapshot() {
-		JSONObject snapshot = new JSONObject();
 		JSONArray appsArray = new JSONArray();
 		try {
 			OutputStream os = new ByteArrayOutputStream();
@@ -350,9 +347,8 @@ public class InteropTest implements SnapshotSourceProvider {
 		Context ctx = listenerInvokedFuture.toCompletableFuture().get(10, TimeUnit.SECONDS);
 	}
 
-	public void joinAllGroups(String color, JavaTest JT) throws Exception {
+	public void joinAllGroups(String color, JavaTest JT) {
 		CompletableFuture<Context> listenerInvokedFuture = new CompletableFuture<>();
-		JSONObject retval = new JSONObject();
 		javaTest = JT;
 		desktopConnection.getInterop().connect(platformId).thenCompose(client->{
 			return client.getContextGroups().thenCompose(groups->{

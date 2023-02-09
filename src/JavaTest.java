@@ -72,6 +72,17 @@ public class JavaTest implements ActionListener{
 		frame.setVisible(true);
 	}
 
+	public static void main(String[] args) throws Exception {
+		JavaTest jt = new JavaTest();
+		try {
+			i.setup(jt.platform);
+			SnapshotSource snapshotSource = new SnapshotSource(i.desktopConnection);
+			snapshotSource.initSnapshotSourceProviderAsync("interop-test-desktop", i);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
 	public static void createFrame(String name, int x, int y, int w, int h) {
 		JFrame frame = new JFrame("Remembering Window Size and Location");
 		// set the frame's location and size
@@ -87,17 +98,6 @@ public class JavaTest implements ActionListener{
 		for (JFrame w:windows) {
 			w.setVisible(false);
 			w.dispose();
-		}
-	}
-
-	public static void main(String[] args) throws Exception {
-		JavaTest jt = new JavaTest();
-		try {
-			i.setup(jt.platform);
-			SnapshotSource snapshotSource = new SnapshotSource(i.desktopConnection);
-			snapshotSource.initSnapshotSourceProviderAsync("interop-test-desktop", i);
-		} catch (IOException e) {
-			e.printStackTrace();
 		}
 	}
 
