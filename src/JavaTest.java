@@ -30,19 +30,19 @@ public class JavaTest implements ActionListener{
 		String[] tickers = { "AAPL", "MSFT", "GOOG", "TSLA" };
 		tickersCB = new JComboBox(tickers);
 		tickersCB.putClientProperty("ticker", true);
-		tickersCB.setSelectedIndex(0);
+		tickersCB.setSelectedIndex(-1);
 		tickersCB.addActionListener(this);
 
 		String[] channelColors = { "red", "green", "pink", "orange", "purple", "yellow" };
 
 		JoinChannelCB = new JComboBox(channelColors);
 		JoinChannelCB.putClientProperty("join", true);
-		JoinChannelCB.setSelectedIndex(1);
+		JoinChannelCB.setSelectedIndex(-1);
 		JoinChannelCB.addActionListener(this);
 
 		JComboBox SetChannelCB = new JComboBox(channelColors);
 		SetChannelCB.putClientProperty("join", false);
-		SetChannelCB.setSelectedIndex(1);
+		SetChannelCB.setSelectedIndex(-1);
 		SetChannelCB.addActionListener(this);
 
 		String[] appStrings = { "App 1", "App 2", "App 3" };
