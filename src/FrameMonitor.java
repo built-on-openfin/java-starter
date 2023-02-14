@@ -12,6 +12,7 @@ public class FrameMonitor {
     }
   public static void registerFrame(JFrame frame, String frameUniqueId,
                                    int defaultX, int defaultY, int defaultW, int defaultH) {
+      init();
       pref.node(frame.getName()).putInt("open", 1);
       CoalescedEventUpdater updater = new CoalescedEventUpdater(400,
               () -> updatePref(frame, pref));
