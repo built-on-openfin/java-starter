@@ -21,7 +21,7 @@ The launched application will allow you to launch native windows and listen/tran
 
 ## Context Sharing:
 
-![](Recording 2023-02-14 at 14.45.25.gif)
+![Recording 2023-02-14 at 14.45.25.gif](Recording 2023-02-14 at 14.45.25.gif)
 
 ## Register native apps with workspace:
 
