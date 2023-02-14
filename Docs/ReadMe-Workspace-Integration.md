@@ -19,6 +19,9 @@ The launched application will allow you to launch native windows and listen/tran
 
 ![img_1.png](img_1.png)
 
+Below is an example of context sharing with ths sample stock charting app:
+
+![](Recording 2023-02-14 at 14.45.25.gif)
 
 ## Running
 
