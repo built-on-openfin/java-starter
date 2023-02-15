@@ -12,12 +12,11 @@ Please refer to the pom.xml file for the dependencies.
 
 ## Starters
 
-| Documentation                                                           | Description                                                                                                                                                                  |
-|-------------------------------------------------------------------------| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [How To Save and Restore Workspaces](/SaveWorkspace)                  | This example shows you how you can ask a platform for a snapshot to save as part of your native application state (where the platform is a child view of your native app) |
-| [How To Listen/Transmit context](./how-to/integrate-with-workspace)     | This gives an example of how a Native Apps can integrate with a workspace platform (e.g. provide snapshot data from a native app to a platform, provide search results or call actions against a platform).|
-| [How To Register apps with workspace](./how-to/integrate-with-workspace) | This gives an example of how a Native Apps can integrate with a workspace platform (e.g. provide snapshot data from a native app to a platform, provide search results or call actions against a platform).|
-| [How To Use Notifications](./how-to/use-notifications)                  | This gives an example of how Native Apps can create and use Notifications with a workspace platform |
+| Documentation                                                 | Description                                                                                                                                                                  |
+|---------------------------------------------------------------| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [How To Save and Restore Workspaces](./Docs/SaveWorkspace.md) | This example shows you how you can ask a platform for a snapshot to save as part of your native application state (where the platform is a child view of your native app) |
+| [How To Listen/Transmit context](./Docs/ContextSharing.md)    | This gives an example of how a Native Apps can integrate with a workspace platform (e.g. provide snapshot data from a native app to a platform, provide search results or call actions against a platform).|
+| [How To Register apps with workspace](./Docs/RegisterApps.md) | This gives an example of how a Native Apps can integrate with a workspace platform (e.g. provide snapshot data from a native app to a platform, provide search results or call actions against a platform).|
 
 [Context Sharing](/.md)
 
