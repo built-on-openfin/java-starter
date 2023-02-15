@@ -157,100 +157,94 @@ public class InteropTest implements SnapshotSourceProvider {
 				}
 			});
 
-			client.register("getApps", new ChannelAction() {
-				@Override
-				public Object invoke(String action, Object payload, JSONObject senderIdentity) {
-					JSONArray appsArray = new JSONArray();
+			client.register("getApps", (action, payload, senderIdentity) -> {
+				JSONArray appsArray = new JSONArray();
+				try {
+					OutputStream os = new ByteArrayOutputStream();
+					FrameMonitor.pref.exportSubtree(os);
+
+					String payloadString = os.toString();
+					payloadString = payloadString.replace("\\r\\n", "");
+					payloadString = payloadString.replace("\\\"", "\"");
+					payloadString = payloadString.replace("\\/", "/");
+					payloadString = payloadString.replaceAll("<map/>", "");
+					DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+					DocumentBuilder builder = null;
 					try {
-						OutputStream os = new ByteArrayOutputStream();
-						FrameMonitor.pref.exportSubtree(os);
-
-						String payloadString = os.toString();
-						payloadString = payloadString.replace("\\r\\n", "");
-						payloadString = payloadString.replace("\\\"", "\"");
-						payloadString = payloadString.replace("\\/", "/");
-						payloadString = payloadString.replaceAll("<map/>", "");
-						DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-						DocumentBuilder builder = null;
-						try {
-							builder = factory.newDocumentBuilder();
-						} catch (ParserConfigurationException e) {
-							e.printStackTrace();
-						}
-
-						try {
-							Document doc = builder.parse(new InputSource(new StringReader(payloadString)));
-							NodeList apps =	doc.getElementsByTagName("root").item(0).getChildNodes().item(1).getChildNodes();
-							for (int i = 3; i < apps.getLength(); i += 2) {
-								JSONObject appObject = new JSONObject();
-								appObject.put("appId", apps.item(i).getAttributes().item(0).getNodeValue());
-								appObject.put("title", apps.item(i).getAttributes().item(0).getNodeValue());
-								appObject.put("description", apps.item(i).getAttributes().item(0).getNodeValue());
-								appObject.put("manifestType", "connection");
-								appsArray.put(appObject);
-							}
-						} catch (SAXException e) {
-							e.printStackTrace();
-						} catch (IOException e) {
-							e.printStackTrace();
-						}
-					} catch (IOException e) {
-						throw new RuntimeException(e);
-					} catch (BackingStoreException e) {
-						throw new RuntimeException(e);
-					} catch (JSONException e) {
-						throw new RuntimeException(e);
+						builder = factory.newDocumentBuilder();
+					} catch (ParserConfigurationException e) {
+						e.printStackTrace();
 					}
-					return appsArray;
+
+					try {
+						Document doc = builder.parse(new InputSource(new StringReader(payloadString)));
+						NodeList apps =	doc.getElementsByTagName("root").item(0).getChildNodes().item(1).getChildNodes();
+						for (int i = 3; i < apps.getLength(); i += 2) {
+							JSONObject appObject = new JSONObject();
+							appObject.put("appId", apps.item(i).getAttributes().item(0).getNodeValue());
+							appObject.put("title", apps.item(i).getAttributes().item(0).getNodeValue());
+							appObject.put("description", apps.item(i).getAttributes().item(0).getNodeValue());
+							appObject.put("manifestType", "connection");
+							appsArray.put(appObject);
+						}
+					} catch (SAXException e) {
+						e.printStackTrace();
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				} catch (IOException e) {
+					throw new RuntimeException(e);
+				} catch (BackingStoreException e) {
+					throw new RuntimeException(e);
+				} catch (JSONException e) {
+					throw new RuntimeException(e);
 				}
+				return appsArray;
 			});
 
-			client.register("launchApp", new ChannelAction() {
-				@Override
-				public Object invoke(String action, Object payload, JSONObject senderIdentity) {
+			client.register("launchApp", (action, payload, senderIdentity) -> {
+				try {
+					OutputStream os = new ByteArrayOutputStream();
+					FrameMonitor.pref.exportSubtree(os);
+
+					String payloadString = os.toString();
+					payloadString = payloadString.replace("\\r\\n", "");
+					payloadString = payloadString.replace("\\\"", "\"");
+					payloadString = payloadString.replace("\\/", "/");
+					payloadString = payloadString.replaceAll("<map/>", "");
+					DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+					DocumentBuilder builder = null;
 					try {
-						OutputStream os = new ByteArrayOutputStream();
-						FrameMonitor.pref.exportSubtree(os);
-
-						String payloadString = os.toString();
-						payloadString = payloadString.replace("\\r\\n", "");
-						payloadString = payloadString.replace("\\\"", "\"");
-						payloadString = payloadString.replace("\\/", "/");
-						payloadString = payloadString.replaceAll("<map/>", "");
-						DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-						DocumentBuilder builder = null;
-						try {
-							builder = factory.newDocumentBuilder();
-						} catch (ParserConfigurationException e) {
-							e.printStackTrace();
-						}
-
-						try {
-							Document doc = builder.parse(new InputSource(new StringReader(payloadString)));
-							NodeList apps =	doc.getElementsByTagName("root").item(0).getChildNodes().item(1).getChildNodes();
-							for (int i = 3; i < apps.getLength(); i += 2) {
-								if (((JSONObject) payload).get("appId").equals(apps.item(i).getAttributes().item(0).getNodeValue())) {
-									String x = apps.item(i).getChildNodes().item(1).getChildNodes().item(1).getAttributes().item(1).getNodeValue();
-									String y = apps.item(i).getChildNodes().item(1).getChildNodes().item(3).getAttributes().item(1).getNodeValue();
-									String width = apps.item(i).getChildNodes().item(1).getChildNodes().item(5).getAttributes().item(1).getNodeValue();
-									String height = apps.item(i).getChildNodes().item(1).getChildNodes().item(7).getAttributes().item(1).getNodeValue();
-									javaTest.createFrame(apps.item(i).getAttributes().item(0).getNodeValue(), Integer.parseInt(x), Integer.parseInt(y), Integer.parseInt(width), Integer.parseInt(height));
-								}
-							}
-						} catch (SAXException e) {
-							e.printStackTrace();
-						} catch (IOException e) {
-							e.printStackTrace();
-						}
-					} catch (IOException e) {
-						throw new RuntimeException(e);
-					} catch (BackingStoreException e) {
-						throw new RuntimeException(e);
-					} catch (JSONException e) {
-						throw new RuntimeException(e);
+						builder = factory.newDocumentBuilder();
+					} catch (ParserConfigurationException e) {
+						e.printStackTrace();
 					}
-					return null;
+
+					try {
+						Document doc = builder.parse(new InputSource(new StringReader(payloadString)));
+						NodeList apps =	doc.getElementsByTagName("root").item(0).getChildNodes().item(1).getChildNodes();
+						for (int i = 3; i < apps.getLength(); i += 2) {
+							if (((JSONObject) payload).get("appId").equals(apps.item(i).getAttributes().item(0).getNodeValue())) {
+								String x = apps.item(i).getChildNodes().item(1).getChildNodes().item(1).getAttributes().item(1).getNodeValue();
+								String y = apps.item(i).getChildNodes().item(1).getChildNodes().item(3).getAttributes().item(1).getNodeValue();
+								String width = apps.item(i).getChildNodes().item(1).getChildNodes().item(5).getAttributes().item(1).getNodeValue();
+								String height = apps.item(i).getChildNodes().item(1).getChildNodes().item(7).getAttributes().item(1).getNodeValue();
+								javaTest.createFrame(apps.item(i).getAttributes().item(0).getNodeValue(), Integer.parseInt(x), Integer.parseInt(y), Integer.parseInt(width), Integer.parseInt(height));
+							}
+						}
+					} catch (SAXException e) {
+						e.printStackTrace();
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				} catch (IOException e) {
+					throw new RuntimeException(e);
+				} catch (BackingStoreException e) {
+					throw new RuntimeException(e);
+				} catch (JSONException e) {
+					throw new RuntimeException(e);
 				}
+				return null;
 			});
 		});
 	}

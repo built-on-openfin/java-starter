@@ -7,10 +7,21 @@ Please refer to the pom.xml file for the dependencies.
 
 ## Getting Started
 1. Clone this repo
-2. Run `mvn clean install` to install the OpenFin Java Adapter
-3. Run `mvn exec:java` to run the example
+2. Install the OpenFin Java Adapter and its dependencies using `mvn install`
+3. Start Java-Starter, JavaTest contains the main method
+
+## Starters
+
+| Documentation                                                            | Description                                                                                                                                                                  |
+|--------------------------------------------------------------------------| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [How To Create A Snapshot Client](./ReadME-workspace-integration)        | This example shows you how you can ask a platform for a snapshot to save as part of your native application state (where the platform is a child view of your native app) |
+| [How To Listen/Transmit context](./how-to/integrate-with-workspace)      | This gives an example of how a Native Apps can integrate with a workspace platform (e.g. provide snapshot data from a native app to a platform, provide search results or call actions against a platform).|
+| [How To Register apps with workspace](./how-to/integrate-with-workspace) | This gives an example of how a Native Apps can integrate with a workspace platform (e.g. provide snapshot data from a native app to a platform, provide search results or call actions against a platform).|
+| [How To Use Notifications](./how-to/use-notifications)                   | This gives an example of how Native Apps can create and use Notifications with a workspace platform |
+
+[Context Sharing](/.md)
 
 ## Documentation
-https://developers.openfin.co/of-docs/docs/java-api
-https://search.maven.org/artifact/co.openfin/openfin-desktop-java-adapter
+- [Openfin Adapter JavaDocs] (https://developers.openfin.co/of-docs/docs/java-api)
+- https://search.maven.org/artifact/co.openfin/openfin-desktop-java-adapter
 
