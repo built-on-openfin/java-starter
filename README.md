@@ -18,11 +18,9 @@ Please refer to the pom.xml file for the dependencies.
 | [How To Listen/Transmit context](./Docs/ContextSharing.md)    | This gives an example of how a Native Apps can integrate with a workspace platform (e.g. provide snapshot data from a native app to a platform, provide search results or call actions against a platform).|
 | [How To Register apps with workspace](./Docs/RegisterApps.md) | This gives an example of how a Native Apps can integrate with a workspace platform (e.g. provide snapshot data from a native app to a platform, provide search results or call actions against a platform).|
 
-[Context Sharing](/.md)
-
 ## Architecture
 
-Window location is tracked using FrameMonitor.java. This class is responsible for listening to the window's frame events and updating the window's location to a local [Preferences](https://docs.oracle.com/javase/7/docs/api/java/util/prefs/Preferences.html).
+Window location is tracked using FrameMonitor.java. This class is responsible for listening to the window's frame events and updating the window's location to local [Preferences](https://docs.oracle.com/javase/7/docs/api/java/util/prefs/Preferences.html).
 
 
 ## Documentation
