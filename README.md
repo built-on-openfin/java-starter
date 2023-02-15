@@ -12,16 +12,21 @@ Please refer to the pom.xml file for the dependencies.
 
 ## Starters
 
-| Documentation                                                            | Description                                                                                                                                                                  |
-|--------------------------------------------------------------------------| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [How To Create A Snapshot Client](./ReadME-workspace-integration)        | This example shows you how you can ask a platform for a snapshot to save as part of your native application state (where the platform is a child view of your native app) |
-| [How To Listen/Transmit context](./how-to/integrate-with-workspace)      | This gives an example of how a Native Apps can integrate with a workspace platform (e.g. provide snapshot data from a native app to a platform, provide search results or call actions against a platform).|
+| Documentation                                                           | Description                                                                                                                                                                  |
+|-------------------------------------------------------------------------| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [How To Save and Restore Workspaces](/SaveWorkspace)                  | This example shows you how you can ask a platform for a snapshot to save as part of your native application state (where the platform is a child view of your native app) |
+| [How To Listen/Transmit context](./how-to/integrate-with-workspace)     | This gives an example of how a Native Apps can integrate with a workspace platform (e.g. provide snapshot data from a native app to a platform, provide search results or call actions against a platform).|
 | [How To Register apps with workspace](./how-to/integrate-with-workspace) | This gives an example of how a Native Apps can integrate with a workspace platform (e.g. provide snapshot data from a native app to a platform, provide search results or call actions against a platform).|
-| [How To Use Notifications](./how-to/use-notifications)                   | This gives an example of how Native Apps can create and use Notifications with a workspace platform |
+| [How To Use Notifications](./how-to/use-notifications)                  | This gives an example of how Native Apps can create and use Notifications with a workspace platform |
 
 [Context Sharing](/.md)
 
+## Architecture
+
+Window location is tracked using FrameMonitor.java. This class is responsible for listening to the window's frame events and updating the window's location to a local [Preferences](https://docs.oracle.com/javase/7/docs/api/java/util/prefs/Preferences.html).
+
+
 ## Documentation
-- [Openfin Adapter JavaDocs] (https://developers.openfin.co/of-docs/docs/java-api)
+- https://developers.openfin.co/of-docs/docs/java-api
 - https://search.maven.org/artifact/co.openfin/openfin-desktop-java-adapter
 
