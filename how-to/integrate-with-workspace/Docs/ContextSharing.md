@@ -60,8 +60,4 @@ Context set using setContext (InteropTest.java):
 
 		setContextFuture.toCompletableFuture().get(10, TimeUnit.SECONDS);
 	}
-
-![Recording 2023-02-14 at 14.45.25.gif](./Docs/Recording 2023-02-14 at 14.45.25.gif)
-
-
-
+ ! [](Recording 2023-02-14 at 14.45.25.gif)
