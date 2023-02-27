@@ -1,4 +1,4 @@
-# csharp-starter
+# Java-starter
 This starter is focused on giving examples related to our Java adapter.
 
 ## Starters
