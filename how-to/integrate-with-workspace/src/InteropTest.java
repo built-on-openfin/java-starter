@@ -68,11 +68,16 @@ public class InteropTest implements SnapshotSourceProvider {
 					JSONObject appObject = new JSONObject();
 					appObject.put("appId", apps.item(i).getAttributes().item(0).getNodeValue());
 					appObject.put("title", apps.item(i).getAttributes().item(0).getNodeValue());
-					appObject.put("x", apps.item(i).getChildNodes().item(1).getChildNodes().item(1).getAttributes().item(1).getNodeValue());
-					appObject.put("y", apps.item(i).getChildNodes().item(1).getChildNodes().item(3).getAttributes().item(1).getNodeValue());
-					appObject.put("w", apps.item(i).getChildNodes().item(1).getChildNodes().item(5).getAttributes().item(1).getNodeValue());
-					appObject.put("h", apps.item(i).getChildNodes().item(1).getChildNodes().item(7).getAttributes().item(1).getNodeValue());
-					appObject.put("open", apps.item(i).getChildNodes().item(1).getChildNodes().item(9).getAttributes().item(1).getNodeValue());
+					appObject.put("x", apps.item(i).getChildNodes().item(1).getChildNodes().item(1).getAttributes()
+							.item(1).getNodeValue());
+					appObject.put("y", apps.item(i).getChildNodes().item(1).getChildNodes().item(3).getAttributes()
+							.item(1).getNodeValue());
+					appObject.put("w", apps.item(i).getChildNodes().item(1).getChildNodes().item(5).getAttributes()
+							.item(1).getNodeValue());
+					appObject.put("h", apps.item(i).getChildNodes().item(1).getChildNodes().item(7).getAttributes()
+							.item(1).getNodeValue());
+					appObject.put("open", apps.item(i).getChildNodes().item(1).getChildNodes().item(9).getAttributes()
+							.item(1).getNodeValue());
 					appObject.put("description", apps.item(i).getAttributes().item(0).getNodeValue());
 					appObject.put("manifestType", "connection");
 					appsArray.put(appObject);
@@ -117,14 +122,16 @@ public class InteropTest implements SnapshotSourceProvider {
 			JSONArray ja = (JSONArray) snapshot.get("snapshot");
 			try {
 				Document doc = builder.parse(new InputSource(new StringReader(payloadString)));
-				NodeList apps =	doc.getElementsByTagName("root").item(0).getChildNodes().item(1).getChildNodes();
+				NodeList apps = doc.getElementsByTagName("root").item(0).getChildNodes().item(1).getChildNodes();
 				JSONObject jo;
 				for (int i = 3; i < apps.getLength(); i += 2) {
 					for (int j = 0; j < ja.length(); j++) {
 						jo = (JSONObject) ja.get(j);
 						if (jo.getString("appId").equals(apps.item(i).getAttributes().item(0).getNodeValue())) {
-							if(Integer.parseInt(jo.getString("open")) == 1)
-								javaTest.createFrame(apps.item(i).getAttributes().item(0).getNodeValue(), Integer.parseInt(jo.getString("x")), Integer.parseInt(jo.getString("y")), Integer.parseInt(jo.getString("w")), Integer.parseInt(jo.getString("h")));
+							if (Integer.parseInt(jo.getString("open")) == 1)
+								javaTest.createFrame(apps.item(i).getAttributes().item(0).getNodeValue(),
+										Integer.parseInt(jo.getString("x")), Integer.parseInt(jo.getString("y")),
+										Integer.parseInt(jo.getString("w")), Integer.parseInt(jo.getString("h")));
 						}
 					}
 				}
@@ -144,7 +151,7 @@ public class InteropTest implements SnapshotSourceProvider {
 
 	public void createChannelClient() throws JSONException {
 
-		desktopConnection.getChannel("customize-workspace-workspace-connection").connectAsync().thenAccept(client -> {
+		desktopConnection.getChannel("workspace-platform-starter-connection").connectAsync().thenAccept(client -> {
 			client.addChannelListener(new ChannelListener() {
 				@Override
 				public void onChannelConnect(ConnectionEvent connectionEvent) {
@@ -178,7 +185,8 @@ public class InteropTest implements SnapshotSourceProvider {
 
 					try {
 						Document doc = builder.parse(new InputSource(new StringReader(payloadString)));
-						NodeList apps =	doc.getElementsByTagName("root").item(0).getChildNodes().item(1).getChildNodes();
+						NodeList apps = doc.getElementsByTagName("root").item(0).getChildNodes().item(1)
+								.getChildNodes();
 						for (int i = 3; i < apps.getLength(); i += 2) {
 							JSONObject appObject = new JSONObject();
 							appObject.put("appId", apps.item(i).getAttributes().item(0).getNodeValue());
@@ -222,14 +230,22 @@ public class InteropTest implements SnapshotSourceProvider {
 
 					try {
 						Document doc = builder.parse(new InputSource(new StringReader(payloadString)));
-						NodeList apps =	doc.getElementsByTagName("root").item(0).getChildNodes().item(1).getChildNodes();
+						NodeList apps = doc.getElementsByTagName("root").item(0).getChildNodes().item(1)
+								.getChildNodes();
 						for (int i = 3; i < apps.getLength(); i += 2) {
-							if (((JSONObject) payload).get("appId").equals(apps.item(i).getAttributes().item(0).getNodeValue())) {
-								String x = apps.item(i).getChildNodes().item(1).getChildNodes().item(1).getAttributes().item(1).getNodeValue();
-								String y = apps.item(i).getChildNodes().item(1).getChildNodes().item(3).getAttributes().item(1).getNodeValue();
-								String width = apps.item(i).getChildNodes().item(1).getChildNodes().item(5).getAttributes().item(1).getNodeValue();
-								String height = apps.item(i).getChildNodes().item(1).getChildNodes().item(7).getAttributes().item(1).getNodeValue();
-								javaTest.createFrame(apps.item(i).getAttributes().item(0).getNodeValue(), Integer.parseInt(x), Integer.parseInt(y), Integer.parseInt(width), Integer.parseInt(height));
+							if (((JSONObject) payload).get("appId")
+									.equals(apps.item(i).getAttributes().item(0).getNodeValue())) {
+								String x = apps.item(i).getChildNodes().item(1).getChildNodes().item(1).getAttributes()
+										.item(1).getNodeValue();
+								String y = apps.item(i).getChildNodes().item(1).getChildNodes().item(3).getAttributes()
+										.item(1).getNodeValue();
+								String width = apps.item(i).getChildNodes().item(1).getChildNodes().item(5)
+										.getAttributes().item(1).getNodeValue();
+								String height = apps.item(i).getChildNodes().item(1).getChildNodes().item(7)
+										.getAttributes().item(1).getNodeValue();
+								javaTest.createFrame(apps.item(i).getAttributes().item(0).getNodeValue(),
+										Integer.parseInt(x), Integer.parseInt(y), Integer.parseInt(width),
+										Integer.parseInt(height));
 							}
 						}
 					} catch (SAXException e) {
@@ -248,32 +264,36 @@ public class InteropTest implements SnapshotSourceProvider {
 			});
 		});
 	}
+
 	public void clientGetContextGroupInfo() throws Exception {
-		CompletionStage<ContextGroupInfo[]> getContextFuture = desktopConnection.getInterop().connect(this.platformId).thenCompose(client->{
-			return client.getContextGroups();
-		});
+		CompletionStage<ContextGroupInfo[]> getContextFuture = desktopConnection.getInterop().connect(this.platformId)
+				.thenCompose(client -> {
+					return client.getContextGroups();
+				});
 
 		ContextGroupInfo[] contextGroupInfo = getContextFuture.toCompletableFuture().get(100, TimeUnit.SECONDS);
-		for(ContextGroupInfo c : contextGroupInfo) {
-			//clientAddContextListener();
+		for (ContextGroupInfo c : contextGroupInfo) {
+			// clientAddContextListener();
 		}
 	}
 
 	public void clientGetInfoForContextGroup() throws Exception {
-		CompletionStage<ContextGroupInfo> getContextFuture = desktopConnection.getInterop().connect(this.platformId).thenCompose(client->{
-			return client.getInfoForContextGroup("red");
-		});
+		CompletionStage<ContextGroupInfo> getContextFuture = desktopConnection.getInterop().connect(this.platformId)
+				.thenCompose(client -> {
+					return client.getInfoForContextGroup("red");
+				});
 
 		ContextGroupInfo contextGroupInfo = getContextFuture.toCompletableFuture().get(100, TimeUnit.SECONDS);
 		logger.debug("Context Group Info" + contextGroupInfo.toString());
 	}
 
 	public void clientGetAllClientsInContextGroup() throws Exception {
-		CompletionStage<ClientIdentity[]> getContextFuture = desktopConnection.getInterop().connect(this.platformId).thenCompose(client->{
-			return client.joinContextGroup("red").thenCompose(v->{
-				return client.getAllClientsInContextGroup("red");
-			});
-		});
+		CompletionStage<ClientIdentity[]> getContextFuture = desktopConnection.getInterop().connect(this.platformId)
+				.thenCompose(client -> {
+					return client.joinContextGroup("red").thenCompose(v -> {
+						return client.getAllClientsInContextGroup("red");
+					});
+				});
 
 		ClientIdentity[] clientIdentity = getContextFuture.toCompletableFuture().get(10, TimeUnit.SECONDS);
 	}
@@ -281,16 +301,16 @@ public class InteropTest implements SnapshotSourceProvider {
 	public void clientJoinThenRemoveFromContextGroup() throws Exception {
 		AtomicInteger clientCntAfterJoin = new AtomicInteger(0);
 		AtomicInteger clientCntAfterRemove = new AtomicInteger(0);
-		CompletionStage<?> testFuture = desktopConnection.getInterop().connect(this.platformId).thenCompose(client->{
-			return client.joinContextGroup("red").thenCompose(v->{
+		CompletionStage<?> testFuture = desktopConnection.getInterop().connect(this.platformId).thenCompose(client -> {
+			return client.joinContextGroup("red").thenCompose(v -> {
 				return client.getAllClientsInContextGroup("red");
-			}).thenAccept(clients->{
+			}).thenAccept(clients -> {
 				clientCntAfterJoin.set(clients.length);
-			}).thenCompose(v->{
+			}).thenCompose(v -> {
 				return client.removeFromContextGroup();
-			}).thenCompose(v->{
+			}).thenCompose(v -> {
 				return client.getAllClientsInContextGroup("red");
-			}).thenAccept(clients->{
+			}).thenAccept(clients -> {
 				clientCntAfterRemove.set(clients.length);
 			});
 		});
@@ -305,13 +325,14 @@ public class InteropTest implements SnapshotSourceProvider {
 		context.setId(contextId);
 		context.setName("MyName");
 		context.setType("instrument");
-		CompletionStage<Void> setContextFuture = desktopConnection.getInterop().connect(platformName).thenCompose(client->{
-			return client.getContextGroups().thenCompose(groups->{
-				return client.joinContextGroup(group).thenCompose(v->{
-					return client.setContext(context);
+		CompletionStage<Void> setContextFuture = desktopConnection.getInterop().connect(platformName)
+				.thenCompose(client -> {
+					return client.getContextGroups().thenCompose(groups -> {
+						return client.joinContextGroup(group).thenCompose(v -> {
+							return client.setContext(context);
+						});
+					});
 				});
-			});
-		});
 
 		setContextFuture.toCompletableFuture().get(10, TimeUnit.SECONDS);
 	}
@@ -326,14 +347,14 @@ public class InteropTest implements SnapshotSourceProvider {
 
 		CompletableFuture<Context> listenerInvokedFuture = new CompletableFuture<>();
 
-		desktopConnection.getInterop().connect(this.platformId).thenCompose(client->{
-			return client.addContextListener(ctx->{
+		desktopConnection.getInterop().connect(this.platformId).thenCompose(client -> {
+			return client.addContextListener(ctx -> {
 				listenerInvokedFuture.complete(ctx);
-			}).thenApply(v->{
+			}).thenApply(v -> {
 				return client;
 			});
-		}).thenCompose(client->{
-			return client.joinContextGroup("red").thenCompose(v->{
+		}).thenCompose(client -> {
+			return client.joinContextGroup("red").thenCompose(v -> {
 				return client.setContext(context);
 			});
 		});
@@ -344,10 +365,10 @@ public class InteropTest implements SnapshotSourceProvider {
 	public void joinAllGroups(String color, JavaTest JT) {
 		CompletableFuture<Context> listenerInvokedFuture = new CompletableFuture<>();
 		javaTest = JT;
-		desktopConnection.getInterop().connect(platformId).thenCompose(client->{
-			return client.getContextGroups().thenCompose(groups->{
-				return client.joinContextGroup(color).thenCompose(v->{
-					return client.addContextListener(ctx->{
+		desktopConnection.getInterop().connect(platformId).thenCompose(client -> {
+			return client.getContextGroups().thenCompose(groups -> {
+				return client.joinContextGroup(color).thenCompose(v -> {
+					return client.addContextListener(ctx -> {
 						System.out.print(color + ctx.getId());
 						JT.updateTicker(ctx.getId());
 						listenerInvokedFuture.complete(ctx);
@@ -358,5 +379,3 @@ public class InteropTest implements SnapshotSourceProvider {
 	}
 
 }
-
-

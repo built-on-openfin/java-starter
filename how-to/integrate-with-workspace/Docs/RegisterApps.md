@@ -1,15 +1,15 @@
 # How to Interop with a Workspace Platform
 
-This example connects three native applications to a workspace platform. The implementation of the workspace platform is on our workspace starter repo: <https://github.com/built-on-openfin/workspace-starter/tree/main/how-to/customize-workspace>.
+This example connects three native applications to a workspace platform. The implementation of the workspace platform is on our workspace starter repo: <https://github.com/built-on-openfin/workspace-starter/tree/main/how-to/workspace-platform-starter>.
 
 It shows how a native application and a workspace platform could work together so that the native applications could provide a list of apps to a platform and provide information so that the native application can be part of a saved workspace.
 
 ## Launch Steps:
-- Launch customize-workspace from the workspace-starter repo. This will launch the workspace platform and the native applications.
+- Launch workspace-platform-starter from the workspace-starter repo. This will launch the workspace platform and the native applications.
 
-- Start Java-Starter from this repo. This will launch the Java application and connect to the workspace platform.
+- Start Java-Starter from this repo. This will launch the Java application.
 
-- Enter 'customize-workspace' into the Platform id prompt. This will connect the Java application to the workspace platform (The platform id can be found in the manifest of the starter project)
+- Enter 'workspace-platform-starter' into the Platform id prompt. This will connect the Java application to the workspace platform (The platform id can be found in the manifest of the starter project)
 
 ![img.png](img.png)
 
@@ -19,16 +19,16 @@ The launched application will allow you to launch native windows and listen/tran
 
 ## Native App Integration from Home:
 
-- Customize-workspace starter queries java project for native apps. The java project responds with a list launchable of native apps.
+- workspace-platform-starter queries java project for native apps. The java project responds with a list of launchable native apps.
 
 
 ![img_2.png](img_2.png)
 
-### Customize Workspace Query for Native Apps (connections.ts in customize-workspace repo):
-    
+### Workspace Platform Starter Query for Native Apps (connections.ts in workspace-platform-starter repo):
+
     export async function getConnectedApps(): Promise<PlatformApp[]> {
 
-### Customize Workspace Launch Native Apps (connections.ts in customize-workspace repo):
+### Workspace Platform Starter Launch Native Apps (connections.ts in workspace-platform-starter repo):
 
     export async function launchConnectedApp(app: PlatformApp) {
 
