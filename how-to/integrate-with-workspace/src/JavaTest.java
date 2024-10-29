@@ -1,4 +1,6 @@
 import com.openfin.desktop.snapshot.SnapshotSource;
+
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import javax.swing.*;
@@ -18,7 +20,7 @@ public class JavaTest implements ActionListener{
 	JComboBox JoinChannelCB;
 	String platform;
 	public JavaTest() {
-		JFrame frame = new JFrame();
+		JFrame frame = new JFrame("Java Starter");
 		JPanel panel = new JPanel();
 		JLabel btnLabelListen = new JLabel("Select to listen to Channel");
 		JLabel btnLabelSet = new JLabel("Select to set Channel:");
@@ -28,7 +30,7 @@ public class JavaTest implements ActionListener{
 			platform = JOptionPane.showInputDialog("Enter Platform id:");
 		} while (platform == null || platform.isEmpty());
 
-		String[] tickers = { "AAPL", "MSFT", "GOOG", "TSLA" };
+		String[] tickers = { "AAPL", "MSFT", "GOOGL", "TSLA" };
 		tickersCB = new JComboBox(tickers);
 		tickersCB.putClientProperty("ticker", true);
 		tickersCB.setSelectedIndex(-1);
@@ -85,7 +87,7 @@ public class JavaTest implements ActionListener{
 	}
 
 	public static void createFrame(String name, int x, int y, int w, int h) {
-		JFrame frame = new JFrame("Remembering Window Size and Location");
+		JFrame frame = new JFrame("Java Starter: Child Window");
 		// set the frame's location and size
 		frame.setBounds(x, y, w, h);
 		frame.setName(name);
@@ -118,7 +120,12 @@ public class JavaTest implements ActionListener{
 		}
 	}
 	public void updateTicker(JSONObject id) {
-		ticker.setText(id.toString());
+		 try {
+        String tickerValue = id.getString("ticker");
+        ticker.setText("Passed Ticker: " + tickerValue);
+    } catch (JSONException e) {
+        e.printStackTrace();
+    }
 	}
 
 }

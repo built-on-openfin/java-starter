@@ -323,8 +323,18 @@ public class InteropTest implements SnapshotSourceProvider {
 		JSONObject contextId = new JSONObject();
 		contextId.put("ticker", ticker);
 		context.setId(contextId);
-		context.setName("MyName");
-		context.setType("instrument");
+		var name = "Unknown";
+		if(ticker.equals("AAPL")) {
+			name = "Apple Inc.";
+		} else if(ticker.equals("MSFT")) {
+			name = "Microsoft Corporation";
+		} else if(ticker.equals("GOOGL")) {
+			name = "Alphabet Inc.";
+		} else if(ticker.equals("TSLA")) {
+			name = "Tesla Inc.";
+		}
+		context.setName(name);
+		context.setType("fdc3.instrument");
 		CompletionStage<Void> setContextFuture = desktopConnection.getInterop().connect(platformName)
 				.thenCompose(client -> {
 					return client.getContextGroups().thenCompose(groups -> {
