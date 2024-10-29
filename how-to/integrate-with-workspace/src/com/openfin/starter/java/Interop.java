@@ -1,3 +1,4 @@
+package com.openfin.starter.java;
 import java.io.*;
 import java.lang.System;
 import java.util.concurrent.CompletableFuture;
@@ -8,6 +9,7 @@ import java.util.prefs.BackingStoreException;
 import com.openfin.desktop.*;
 import com.openfin.desktop.ClientIdentity;
 import com.openfin.desktop.snapshot.SnapshotSourceProvider;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -26,15 +28,15 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
-public class InteropTest implements SnapshotSourceProvider {
-	private static Logger logger = LoggerFactory.getLogger(InteropTest.class.getName());
+public class Interop implements SnapshotSourceProvider {
+	private static Logger logger = LoggerFactory.getLogger(Interop.class.getName());
 	public static DesktopConnection desktopConnection;
 	private String platformId;
-	private JavaTest javaTest;
+	private Main javaTest;
 
-	public void setup(String platformId) throws Exception {
+	public void setup(String platformId, String connectionUuid) throws Exception {
 		logger.debug("starting");
-		desktopConnection = TestUtils.setupConnection("interop-test-desktop");
+		desktopConnection = Runtime.setupConnection(connectionUuid);
 		this.platformId = platformId;
 		FrameMonitor.init();
 		createChannelClient();
@@ -372,7 +374,7 @@ public class InteropTest implements SnapshotSourceProvider {
 		Context ctx = listenerInvokedFuture.toCompletableFuture().get(10, TimeUnit.SECONDS);
 	}
 
-	public void joinAllGroups(String color, JavaTest JT) {
+	public void joinAllGroups(String color, Main JT) {
 		CompletableFuture<Context> listenerInvokedFuture = new CompletableFuture<>();
 		javaTest = JT;
 		desktopConnection.getInterop().connect(platformId).thenCompose(client -> {

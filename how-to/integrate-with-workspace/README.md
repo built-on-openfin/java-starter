@@ -9,6 +9,19 @@ Please refer to the pom.xml file for the dependencies.
 1. Clone this repo
 2. Install the OpenFin Java Adapter and its dependencies using `mvn install`
 3. Start Java-Starter, JavaTest contains the main method
+4. To package into a jar you can use mvn package (or the tools provided by your IDE to execute the command). 
+
+## IDEs
+
+You can use your own preference to build this project but we are using Visual Studio Code with Java Extensions.
+
+## Command Line Args
+
+This example supports the following command line arguments:
+
+- workspaceUUID (the workspace to connect to) - If not provided then a pop up appears asking for a workspace platform uuid to be specified.
+- nativeUUID (the id this app should provide to the runtime when starting up - this will be the identity seen by the platform you connect to). Defaults to "interop-test-desktop".
+- registerIntents (defaults to false and changes to true if passed). Not used yet.
 
 ## Starters
 

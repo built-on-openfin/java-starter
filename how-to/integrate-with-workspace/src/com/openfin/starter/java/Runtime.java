@@ -1,3 +1,4 @@
+package com.openfin.starter.java;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -18,17 +19,8 @@ import com.openfin.desktop.OpenFinRuntime;
 import com.openfin.desktop.RuntimeConfiguration;
 import com.openfin.desktop.WindowOptions;
 
-/**
- * Utitlites for Junit test code
- *
- * Test cases in this class need to have access to an OpenFin HTML5 app to verify sub/pub workflow.  Sources for the app can be found in release
- * directory: SimpleOpenFinApp.html.  It is hosted by OpenFin at https://cdn.openfin.co/examples/junit/SimpleOpenFinApp.html
- *
- * Created by wche on 1/23/16.
- *
- */
-public class TestUtils {
-    private static Logger logger = LoggerFactory.getLogger(TestUtils.class.getName());
+public class Runtime {
+    private static Logger logger = LoggerFactory.getLogger(Runtime.class.getName());
     private static boolean connectionClosing;
     private static String runtimeVersion;
     private static CountDownLatch disconnectedLatch;

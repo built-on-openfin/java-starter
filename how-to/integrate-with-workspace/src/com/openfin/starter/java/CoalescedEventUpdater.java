@@ -1,3 +1,4 @@
+package com.openfin.starter.java;
 import javax.swing.*;
 
 public class CoalescedEventUpdater {
