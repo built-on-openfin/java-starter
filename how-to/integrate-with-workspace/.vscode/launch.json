@@ -1,0 +1,30 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Current File",
+            "request": "launch",
+            "mainClass": "${file}",
+            "args": "workspaceUUID=workspace-platform-starter nativeUUID=java-interop-example registerIntents"
+        },
+        {
+            "type": "java",
+            "name": "Main",
+            "request": "launch",
+            "mainClass": "com.openfin.starter.java.Main",
+            "projectName": "test",
+            "args": "workspaceUUID=workspace-platform-starter nativeUUID=java-interop-example registerIntents"
+        },
+        {
+            "type": "java",
+            "name": "Attach to Java Process",
+            "request": "attach",
+            "hostName": "localhost",
+            "port": 5005
+        }
+    ]
+}

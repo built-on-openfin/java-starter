@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import com.openfin.desktop.interop.Context;
 import com.openfin.desktop.interop.ContextGroupInfo;
+import com.openfin.desktop.interop.Intent;
 import com.openfin.desktop.channel.*;
 import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
@@ -32,7 +33,6 @@ public class Interop implements SnapshotSourceProvider {
 	private static Logger logger = LoggerFactory.getLogger(Interop.class.getName());
 	public static DesktopConnection desktopConnection;
 	private String platformId;
-	private Main javaTest;
 
 	public void setup(String platformId, String connectionUuid) throws Exception {
 		logger.debug("starting");
@@ -104,7 +104,7 @@ public class Interop implements SnapshotSourceProvider {
 	@Override
 	public void applySnapshot(JSONObject snapshot) {
 		try {
-			javaTest.CloseAllWindows();
+			Main.CloseAllWindows();
 			OutputStream os = new ByteArrayOutputStream();
 			FrameMonitor.pref.exportSubtree(os);
 
@@ -131,8 +131,10 @@ public class Interop implements SnapshotSourceProvider {
 						jo = (JSONObject) ja.get(j);
 						if (jo.getString("appId").equals(apps.item(i).getAttributes().item(0).getNodeValue())) {
 							if (Integer.parseInt(jo.getString("open")) == 1)
-								javaTest.createFrame(apps.item(i).getAttributes().item(0).getNodeValue(),
+								Main.createFrame(apps.item(i).getAttributes().item(0).getNodeValue(),
 										Integer.parseInt(jo.getString("x")), Integer.parseInt(jo.getString("y")),
+										Integer.parseInt(jo.getString("w")), Integer.parseInt(jo.getString("h")),
+										Integer.parseInt(jo.getString("w")), Integer.parseInt(jo.getString("h")),
 										Integer.parseInt(jo.getString("w")), Integer.parseInt(jo.getString("h")));
 						}
 					}
@@ -245,8 +247,11 @@ public class Interop implements SnapshotSourceProvider {
 										.getAttributes().item(1).getNodeValue();
 								String height = apps.item(i).getChildNodes().item(1).getChildNodes().item(7)
 										.getAttributes().item(1).getNodeValue();
-								javaTest.createFrame(apps.item(i).getAttributes().item(0).getNodeValue(),
+								Main.createFrame(apps.item(i).getAttributes().item(0).getNodeValue(),
 										Integer.parseInt(x), Integer.parseInt(y), Integer.parseInt(width),
+										Integer.parseInt(height), Integer.parseInt(width),
+										Integer.parseInt(height),
+										Integer.parseInt(width),
 										Integer.parseInt(height));
 							}
 						}
@@ -267,16 +272,14 @@ public class Interop implements SnapshotSourceProvider {
 		});
 	}
 
-	public void clientGetContextGroupInfo() throws Exception {
+	public ContextGroupInfo[] clientGetContextGroupInfo() throws Exception {
 		CompletionStage<ContextGroupInfo[]> getContextFuture = desktopConnection.getInterop().connect(this.platformId)
 				.thenCompose(client -> {
 					return client.getContextGroups();
 				});
 
 		ContextGroupInfo[] contextGroupInfo = getContextFuture.toCompletableFuture().get(100, TimeUnit.SECONDS);
-		for (ContextGroupInfo c : contextGroupInfo) {
-			// clientAddContextListener();
-		}
+		return contextGroupInfo;
 	}
 
 	public void clientGetInfoForContextGroup() throws Exception {
@@ -376,7 +379,6 @@ public class Interop implements SnapshotSourceProvider {
 
 	public void joinAllGroups(String color, Main JT) {
 		CompletableFuture<Context> listenerInvokedFuture = new CompletableFuture<>();
-		javaTest = JT;
 		desktopConnection.getInterop().connect(platformId).thenCompose(client -> {
 			return client.getContextGroups().thenCompose(groups -> {
 				return client.joinContextGroup(color).thenCompose(v -> {
@@ -389,5 +391,47 @@ public class Interop implements SnapshotSourceProvider {
 			});
 		});
 	}
+
+	public void clientFireIntent(String intent, String type, String typeValue, String platformName) throws Exception {
+		Context context = new Context();
+		JSONObject contextId = new JSONObject();
+		contextId.put("ticker", typeValue);
+		context.setId(contextId);
+		var name = "Unknown";
+		if(typeValue.equals("AAPL")) {
+			name = "Apple Inc.";
+		} else if(typeValue.equals("MSFT")) {
+			name = "Microsoft Corporation";
+		} else if(typeValue.equals("GOOGL")) {
+			name = "Alphabet Inc.";
+		} else if(typeValue.equals("TSLA")) {
+			name = "Tesla Inc.";
+		}
+		context.setName(name);
+		context.setType("fdc3.instrument");
+
+		Intent intentToRaise = new Intent();
+		intentToRaise.setContext(context);
+		intentToRaise.setName(intent);
+		CompletionStage<Void> fireIntentFuture = desktopConnection.getInterop().connect(platformName)
+            .thenCompose(client -> {
+                return client.fireIntent(intentToRaise);
+            });
+
+    	fireIntentFuture.toCompletableFuture().get(10, TimeUnit.SECONDS);
+	}
+
+	public void addIntentListener(String platformName, Main JT) throws Exception {
+        desktopConnection.getInterop().connect(platformName).thenCompose(client -> {
+            return client.registerIntentListener("ViewInstrument", intent -> {
+                Context context = intent.getContext();
+                System.out.println("Received intent: " + intent.getName());
+                System.out.println("Context: " + context.getId());
+				JT.updateTicker(context.getId());
+				JT.updateReceivedIntent(intent.getName());
+            });
+        }).toCompletableFuture().get(10, TimeUnit.SECONDS);
+    }
+
 
 }
