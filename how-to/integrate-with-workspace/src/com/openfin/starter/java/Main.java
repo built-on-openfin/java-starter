@@ -1,7 +1,6 @@
 package com.openfin.starter.java;
-
-import com.openfin.desktop.ActionEvent;
 import com.openfin.desktop.snapshot.SnapshotSource;
+import com.openfin.desktop.interop.ContextGroupInfo;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -15,8 +14,9 @@ import java.awt.event.WindowEvent;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletionStage;
 
-public class Main implements ActionListener {
+public class Main {
     static Interop interopConnection = new Interop();
     static int x = 0;
     static int y = 0;
@@ -79,11 +79,9 @@ public class Main implements ActionListener {
         tickersCB = new JComboBox<>(tickers);
         tickersCB.putClientProperty("ticker", true);
         tickersCB.setSelectedIndex(-1);
-        tickersCB.addActionListener(this);
 
-        String[] channelColors = {"red", "green", "pink", "orange", "purple", "yellow"};
-
-        JoinChannelCB = new JComboBox<>(channelColors);
+        // Initialize JoinChannelCB with an empty array
+        JoinChannelCB = new JComboBox<>(new String[]{});
         JoinChannelCB.putClientProperty("join", true);
         JoinChannelCB.setSelectedIndex(-1);
         JoinChannelCB.addActionListener(e -> {
@@ -94,17 +92,13 @@ public class Main implements ActionListener {
         appsCB = new JComboBox<>(appStrings);
         appsCB.putClientProperty("app", true);
         appsCB.setSelectedIndex(-1);
-        appsCB.addActionListener(this);
 
         JButton setContextButton = new JButton("Set Context");
         setContextButton.setEnabled(false); // Initially disabled
         setContextButton.addActionListener(e -> {
             try {
-				var ticker = tickersCB.getSelectedItem().toString();
-				var channel = JoinChannelCB.getSelectedItem().toString();
-				this.logMessage("Setting Context with Instrument " + ticker + " on Channel: " + channel);
-                interopConnection.clientSetContext(channel,
-                        ticker, platformUuid);
+                interopConnection.clientSetContext(JoinChannelCB.getSelectedItem().toString(),
+                        tickersCB.getSelectedItem().toString(), platformUuid);
             } catch (Exception e1) {
                 e1.printStackTrace();
             }
@@ -120,9 +114,7 @@ public class Main implements ActionListener {
         fireIntent.setEnabled(false); // Initially disabled
         fireIntent.addActionListener(e -> {
             try {
-				var ticker = tickersCB.getSelectedItem().toString();
-				this.logMessage("Firing Intent: ViewChart with type fdc3.instrument and ticker " + ticker);
-                interopConnection.clientFireIntent("ViewChart", "fdc3.instrument", ticker, platformUuid);
+                interopConnection.clientFireIntent("ViewChart", "fdc3.instrument", tickersCB.getSelectedItem().toString(), platformUuid);
             } catch (Exception e1) {
                 e1.printStackTrace();
             }
@@ -217,9 +209,31 @@ public class Main implements ActionListener {
         }
     }
 
-    @Override
-    public void actionPerformed(java.awt.event.ActionEvent e) {
-      
+    private void fetchChannelColors() {
+        try {
+            CompletionStage<ContextGroupInfo[]> getContextFuture = interopConnection.clientGetContextGroupInfo();
+            getContextFuture.thenAccept(contextGroupInfos -> {
+                List<String> ids = new ArrayList<>();
+                for (ContextGroupInfo groupInfo : contextGroupInfos) {
+                    ids.add(groupInfo.getId());
+                }
+                SwingUtilities.invokeLater(() -> {
+                    JoinChannelCB.setModel(new DefaultComboBoxModel<>(ids.toArray(new String[0])));
+					JoinChannelCB.setSelectedIndex(-1);
+                });
+            }).exceptionally(ex -> {
+                ex.printStackTrace();
+                return null;
+            });
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void enableDropdowns() {
+        tickersCB.setEnabled(true);
+        JoinChannelCB.setEnabled(true);
+        appsCB.setEnabled(true);
     }
 
     public void updateTicker(JSONObject id) {
@@ -252,9 +266,12 @@ public class Main implements ActionListener {
         mainApplication.logMessage("Workspace UUID: " + workspaceUUID);
         mainApplication.logMessage("Native UUID: " + nativeUUID);
         mainApplication.logMessage("Register Intents: " + registerIntents);
-        mainApplication.updateReceivedIntent(workspaceUUID);
         try {
-            interopConnection.setup(mainApplication.platformUuid, mainApplication.runtimeUuid);
+            interopConnection.setup(mainApplication.platformUuid, mainApplication.runtimeUuid, () -> {
+                mainApplication.enableDropdowns();
+                mainApplication.fetchChannelColors();
+				mainApplication.logMessage("Connected to Runtime.");
+            });
             SnapshotSource snapshotSource = new SnapshotSource(interopConnection.desktopConnection);
             snapshotSource.initSnapshotSourceProviderAsync(mainApplication.runtimeUuid, interopConnection);
             if (registerIntents) {

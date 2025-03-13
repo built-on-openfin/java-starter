@@ -30,408 +30,366 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
 public class Interop implements SnapshotSourceProvider {
-	private static Logger logger = LoggerFactory.getLogger(Interop.class.getName());
-	public static DesktopConnection desktopConnection;
-	private String platformId;
+    private static Logger logger = LoggerFactory.getLogger(Interop.class.getName());
+    public static DesktopConnection desktopConnection;
+    private String platformId;
 
-	public void setup(String platformId, String connectionUuid) throws Exception {
-		logger.debug("starting");
-		desktopConnection = Runtime.setupConnection(connectionUuid);
-		this.platformId = platformId;
-		FrameMonitor.init();
-		createChannelClient();
-	}
+    public void setup(String platformId, String connectionUuid, Runnable onReadyCallback) throws Exception {
+        logger.debug("starting");
+        desktopConnection = new DesktopConnection(connectionUuid);
+        RuntimeConfiguration cfg = new RuntimeConfiguration();
+        cfg.setRuntimeVersion("stable");
+        cfg.setAdditionalRuntimeArguments(" --v=1 ");
+        desktopConnection.connect(cfg, new DesktopStateListener() {
 
-	@Override
-	public JSONObject getSnapshot() {
-		JSONArray appsArray = new JSONArray();
-		try {
-			OutputStream os = new ByteArrayOutputStream();
+            @Override
+            public void onReady() {
+                logger.info("Desktop Connection Ready");
+                if (onReadyCallback != null) {
+                    onReadyCallback.run();
+                }
+            }
 
-			FrameMonitor.pref.exportSubtree(os);
+            @Override
+            public void onClose(String error) {
+                logger.info("Closing: " + error);
+            }
 
-			String payloadString = os.toString();
-			payloadString = payloadString.replace("\\r\\n", "");
-			payloadString = payloadString.replace("\\\"", "\"");
-			payloadString = payloadString.replace("\\/", "/");
-			payloadString = payloadString.replaceAll("<map/>", "");
-			DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-			DocumentBuilder builder = null;
-			try {
-				builder = factory.newDocumentBuilder();
-			} catch (ParserConfigurationException e) {
-				e.printStackTrace();
-			}
+            @Override
+            public void onError(String reason) {
+                logger.error("Desktop Connection Error: " + reason);
+            }
 
-			try {
-				Document doc = builder.parse(new InputSource(new StringReader(payloadString)));
-				NodeList apps = doc.getElementsByTagName("root").item(0).getChildNodes().item(1).getChildNodes();
-				for (int i = 3; i < apps.getLength(); i += 2) {
-					JSONObject appObject = new JSONObject();
-					appObject.put("appId", apps.item(i).getAttributes().item(0).getNodeValue());
-					appObject.put("title", apps.item(i).getAttributes().item(0).getNodeValue());
-					appObject.put("x", apps.item(i).getChildNodes().item(1).getChildNodes().item(1).getAttributes()
-							.item(1).getNodeValue());
-					appObject.put("y", apps.item(i).getChildNodes().item(1).getChildNodes().item(3).getAttributes()
-							.item(1).getNodeValue());
-					appObject.put("w", apps.item(i).getChildNodes().item(1).getChildNodes().item(5).getAttributes()
-							.item(1).getNodeValue());
-					appObject.put("h", apps.item(i).getChildNodes().item(1).getChildNodes().item(7).getAttributes()
-							.item(1).getNodeValue());
-					appObject.put("open", apps.item(i).getChildNodes().item(1).getChildNodes().item(9).getAttributes()
-							.item(1).getNodeValue());
-					appObject.put("description", apps.item(i).getAttributes().item(0).getNodeValue());
-					appObject.put("manifestType", "connection");
-					appsArray.put(appObject);
-				}
-			} catch (SAXException e) {
-				e.printStackTrace();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+            @Override
+            public void onMessage(String message) {
+            }
 
-			return new JSONObject("{ snapshot: " + appsArray.toString() + " }");
+            @Override
+            public void onOutgoingMessage(String message) {
 
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		} catch (BackingStoreException e) {
-			throw new RuntimeException(e);
-		} catch (JSONException e) {
-			throw new RuntimeException(e);
-		}
-	}
+            }
+        }, 60);
 
-	@Override
-	public void applySnapshot(JSONObject snapshot) {
-		try {
-			Main.CloseAllWindows();
-			OutputStream os = new ByteArrayOutputStream();
-			FrameMonitor.pref.exportSubtree(os);
+        this.platformId = platformId;
+        FrameMonitor.init();
+        createChannelClient(platformId);
+    }
 
-			String payloadString = os.toString();
-			payloadString = payloadString.replace("\\r\\n", "");
-			payloadString = payloadString.replace("\\\"", "\"");
-			payloadString = payloadString.replace("\\/", "/");
-			payloadString = payloadString.replaceAll("<map/>", "");
-			DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-			DocumentBuilder builder = null;
-			try {
-				builder = factory.newDocumentBuilder();
-			} catch (ParserConfigurationException e) {
-				e.printStackTrace();
-			}
+    @Override
+    public JSONObject getSnapshot() {
+        JSONArray appsArray = new JSONArray();
+        try {
+            OutputStream os = new ByteArrayOutputStream();
 
-			JSONArray ja = (JSONArray) snapshot.get("snapshot");
-			try {
-				Document doc = builder.parse(new InputSource(new StringReader(payloadString)));
-				NodeList apps = doc.getElementsByTagName("root").item(0).getChildNodes().item(1).getChildNodes();
-				JSONObject jo;
-				for (int i = 3; i < apps.getLength(); i += 2) {
-					for (int j = 0; j < ja.length(); j++) {
-						jo = (JSONObject) ja.get(j);
-						if (jo.getString("appId").equals(apps.item(i).getAttributes().item(0).getNodeValue())) {
-							if (Integer.parseInt(jo.getString("open")) == 1)
-								Main.createFrame(apps.item(i).getAttributes().item(0).getNodeValue(),
-										Integer.parseInt(jo.getString("x")), Integer.parseInt(jo.getString("y")),
-										Integer.parseInt(jo.getString("w")), Integer.parseInt(jo.getString("h")),
-										Integer.parseInt(jo.getString("w")), Integer.parseInt(jo.getString("h")),
-										Integer.parseInt(jo.getString("w")), Integer.parseInt(jo.getString("h")));
-						}
-					}
-				}
-			} catch (SAXException e) {
-				e.printStackTrace();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		} catch (BackingStoreException e) {
-			throw new RuntimeException(e);
-		} catch (JSONException e) {
-			throw new RuntimeException(e);
-		}
-	}
+            FrameMonitor.pref.exportSubtree(os);
 
-	public void createChannelClient() throws JSONException {
+            String payloadString = os.toString();
+            payloadString = payloadString.replace("\\r\\n", "");
+            payloadString = payloadString.replace("\\\"", "\"");
+            payloadString = payloadString.replace("\\/", "/");
+            payloadString = payloadString.replaceAll("<map/>", "");
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = null;
+            try {
+                builder = factory.newDocumentBuilder();
+            } catch (ParserConfigurationException e) {
+                e.printStackTrace();
+            }
 
-		desktopConnection.getChannel("workspace-platform-starter-connection").connectAsync().thenAccept(client -> {
-			client.addChannelListener(new ChannelListener() {
-				@Override
-				public void onChannelConnect(ConnectionEvent connectionEvent) {
-					logger.info("channel connected {}", connectionEvent.getChannelId());
-				}
+            try {
+                Document doc = builder.parse(new InputSource(new StringReader(payloadString)));
+                NodeList apps = doc.getElementsByTagName("root").item(0).getChildNodes().item(1).getChildNodes();
+                for (int i = 3; i < apps.getLength(); i += 2) {
+                    JSONObject appObject = new JSONObject();
+                    appObject.put("appId", apps.item(i).getAttributes().item(0).getNodeValue());
+                    appObject.put("title", apps.item(i).getAttributes().item(0).getNodeValue());
+                    appObject.put("x", apps.item(i).getChildNodes().item(1).getChildNodes().item(1).getAttributes()
+                            .item(1).getNodeValue());
+                    appObject.put("y", apps.item(i).getChildNodes().item(1).getChildNodes().item(3).getAttributes()
+                            .item(1).getNodeValue());
+                    appObject.put("w", apps.item(i).getChildNodes().item(1).getChildNodes().item(5).getAttributes()
+                            .item(1).getNodeValue());
+                    appObject.put("h", apps.item(i).getChildNodes().item(1).getChildNodes().item(7).getAttributes()
+                            .item(1).getNodeValue());
+                    appObject.put("open", apps.item(i).getChildNodes().item(1).getChildNodes().item(9).getAttributes()
+                            .item(1).getNodeValue());
+                    appObject.put("description", apps.item(i).getAttributes().item(0).getNodeValue());
+                    appObject.put("manifestType", "connection");
+                    appsArray.put(appObject);
+                }
+            } catch (SAXException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
 
-				@Override
-				public void onChannelDisconnect(ConnectionEvent connectionEvent) {
-					logger.info("channel disconnected {}", connectionEvent.getChannelId());
-				}
-			});
+            return new JSONObject("{ snapshot: " + appsArray.toString() + " }");
 
-			client.register("getApps", (action, payload, senderIdentity) -> {
-				JSONArray appsArray = new JSONArray();
-				try {
-					OutputStream os = new ByteArrayOutputStream();
-					FrameMonitor.pref.exportSubtree(os);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } catch (BackingStoreException e) {
+            throw new RuntimeException(e);
+        } catch (JSONException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
-					String payloadString = os.toString();
-					payloadString = payloadString.replace("\\r\\n", "");
-					payloadString = payloadString.replace("\\\"", "\"");
-					payloadString = payloadString.replace("\\/", "/");
-					payloadString = payloadString.replaceAll("<map/>", "");
-					DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-					DocumentBuilder builder = null;
-					try {
-						builder = factory.newDocumentBuilder();
-					} catch (ParserConfigurationException e) {
-						e.printStackTrace();
-					}
+    @Override
+    public void applySnapshot(JSONObject snapshot) {
+        try {
+            Main.CloseAllWindows();
+            OutputStream os = new ByteArrayOutputStream();
+            FrameMonitor.pref.exportSubtree(os);
 
-					try {
-						Document doc = builder.parse(new InputSource(new StringReader(payloadString)));
-						NodeList apps = doc.getElementsByTagName("root").item(0).getChildNodes().item(1)
-								.getChildNodes();
-						for (int i = 3; i < apps.getLength(); i += 2) {
-							JSONObject appObject = new JSONObject();
-							appObject.put("appId", apps.item(i).getAttributes().item(0).getNodeValue());
-							appObject.put("title", apps.item(i).getAttributes().item(0).getNodeValue());
-							appObject.put("description", apps.item(i).getAttributes().item(0).getNodeValue());
-							appObject.put("manifestType", "connection");
-							appsArray.put(appObject);
-						}
-					} catch (SAXException e) {
-						e.printStackTrace();
-					} catch (IOException e) {
-						e.printStackTrace();
-					}
-				} catch (IOException e) {
-					throw new RuntimeException(e);
-				} catch (BackingStoreException e) {
-					throw new RuntimeException(e);
-				} catch (JSONException e) {
-					throw new RuntimeException(e);
-				}
-				return appsArray;
-			});
+            String payloadString = os.toString();
+            payloadString = payloadString.replace("\\r\\n", "");
+            payloadString = payloadString.replace("\\\"", "\"");
+            payloadString = payloadString.replace("\\/", "/");
+            payloadString = payloadString.replaceAll("<map/>", "");
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = null;
+            try {
+                builder = factory.newDocumentBuilder();
+            } catch (ParserConfigurationException e) {
+                e.printStackTrace();
+            }
 
-			client.register("launchApp", (action, payload, senderIdentity) -> {
-				try {
-					OutputStream os = new ByteArrayOutputStream();
-					FrameMonitor.pref.exportSubtree(os);
+            JSONArray ja = (JSONArray) snapshot.get("snapshot");
+            try {
+                Document doc = builder.parse(new InputSource(new StringReader(payloadString)));
+                NodeList apps = doc.getElementsByTagName("root").item(0).getChildNodes().item(1).getChildNodes();
+                JSONObject jo;
+                for (int i = 3; i < apps.getLength(); i += 2) {
+                    for (int j = 0; j < ja.length(); j++) {
+                        jo = (JSONObject) ja.get(j);
+                        if (jo.getString("appId").equals(apps.item(i).getAttributes().item(0).getNodeValue())) {
+                            if (Integer.parseInt(jo.getString("open")) == 1)
+                                Main.createFrame(apps.item(i).getAttributes().item(0).getNodeValue(),
+                                        Integer.parseInt(jo.getString("x")), Integer.parseInt(jo.getString("y")),
+                                        Integer.parseInt(jo.getString("w")), Integer.parseInt(jo.getString("h")),
+                                        Integer.parseInt(jo.getString("w")), Integer.parseInt(jo.getString("h")),
+                                        Integer.parseInt(jo.getString("w")), Integer.parseInt(jo.getString("h")));
+                        }
+                    }
+                }
+            } catch (SAXException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } catch (BackingStoreException e) {
+            throw new RuntimeException(e);
+        } catch (JSONException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
-					String payloadString = os.toString();
-					payloadString = payloadString.replace("\\r\\n", "");
-					payloadString = payloadString.replace("\\\"", "\"");
-					payloadString = payloadString.replace("\\/", "/");
-					payloadString = payloadString.replaceAll("<map/>", "");
-					DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-					DocumentBuilder builder = null;
-					try {
-						builder = factory.newDocumentBuilder();
-					} catch (ParserConfigurationException e) {
-						e.printStackTrace();
-					}
+    public void createChannelClient(String platformId) throws JSONException {
 
-					try {
-						Document doc = builder.parse(new InputSource(new StringReader(payloadString)));
-						NodeList apps = doc.getElementsByTagName("root").item(0).getChildNodes().item(1)
-								.getChildNodes();
-						for (int i = 3; i < apps.getLength(); i += 2) {
-							if (((JSONObject) payload).get("appId")
-									.equals(apps.item(i).getAttributes().item(0).getNodeValue())) {
-								String x = apps.item(i).getChildNodes().item(1).getChildNodes().item(1).getAttributes()
-										.item(1).getNodeValue();
-								String y = apps.item(i).getChildNodes().item(1).getChildNodes().item(3).getAttributes()
-										.item(1).getNodeValue();
-								String width = apps.item(i).getChildNodes().item(1).getChildNodes().item(5)
-										.getAttributes().item(1).getNodeValue();
-								String height = apps.item(i).getChildNodes().item(1).getChildNodes().item(7)
-										.getAttributes().item(1).getNodeValue();
-								Main.createFrame(apps.item(i).getAttributes().item(0).getNodeValue(),
-										Integer.parseInt(x), Integer.parseInt(y), Integer.parseInt(width),
-										Integer.parseInt(height), Integer.parseInt(width),
-										Integer.parseInt(height),
-										Integer.parseInt(width),
-										Integer.parseInt(height));
-							}
-						}
-					} catch (SAXException e) {
-						e.printStackTrace();
-					} catch (IOException e) {
-						e.printStackTrace();
-					}
-				} catch (IOException e) {
-					throw new RuntimeException(e);
-				} catch (BackingStoreException e) {
-					throw new RuntimeException(e);
-				} catch (JSONException e) {
-					throw new RuntimeException(e);
-				}
-				return null;
-			});
-		});
-	}
+        desktopConnection.getChannel(platformId.toLowerCase() + "-connection").connectAsync().thenAccept(client -> {
+            client.addChannelListener(new ChannelListener() {
+                @Override
+                public void onChannelConnect(ConnectionEvent connectionEvent) {
+                    logger.info("channel connected {}", connectionEvent.getChannelId());
+                }
 
-	public ContextGroupInfo[] clientGetContextGroupInfo() throws Exception {
-		CompletionStage<ContextGroupInfo[]> getContextFuture = desktopConnection.getInterop().connect(this.platformId)
-				.thenCompose(client -> {
-					return client.getContextGroups();
-				});
+                @Override
+                public void onChannelDisconnect(ConnectionEvent connectionEvent) {
+                    logger.info("channel disconnected {}", connectionEvent.getChannelId());
+                }
+            });
 
-		ContextGroupInfo[] contextGroupInfo = getContextFuture.toCompletableFuture().get(100, TimeUnit.SECONDS);
-		return contextGroupInfo;
-	}
+            client.register("getApps", (action, payload, senderIdentity) -> {
+                JSONArray appsArray = new JSONArray();
+                try {
+                    OutputStream os = new ByteArrayOutputStream();
+                    FrameMonitor.pref.exportSubtree(os);
 
-	public void clientGetInfoForContextGroup() throws Exception {
-		CompletionStage<ContextGroupInfo> getContextFuture = desktopConnection.getInterop().connect(this.platformId)
-				.thenCompose(client -> {
-					return client.getInfoForContextGroup("red");
-				});
+                    String payloadString = os.toString();
+                    payloadString = payloadString.replace("\\r\\n", "");
+                    payloadString = payloadString.replace("\\\"", "\"");
+                    payloadString = payloadString.replace("\\/", "/");
+                    payloadString = payloadString.replaceAll("<map/>", "");
+                    DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+                    DocumentBuilder builder = null;
+                    try {
+                        builder = factory.newDocumentBuilder();
+                    } catch (ParserConfigurationException e) {
+                        e.printStackTrace();
+                    }
 
-		ContextGroupInfo contextGroupInfo = getContextFuture.toCompletableFuture().get(100, TimeUnit.SECONDS);
-		logger.debug("Context Group Info" + contextGroupInfo.toString());
-	}
+                    try {
+                        Document doc = builder.parse(new InputSource(new StringReader(payloadString)));
+                        NodeList apps = doc.getElementsByTagName("root").item(0).getChildNodes().item(1)
+                                .getChildNodes();
+                        for (int i = 3; i < apps.getLength(); i += 2) {
+                            JSONObject appObject = new JSONObject();
+                            appObject.put("appId", apps.item(i).getAttributes().item(0).getNodeValue());
+                            appObject.put("title", apps.item(i).getAttributes().item(0).getNodeValue());
+                            appObject.put("description", apps.item(i).getAttributes().item(0).getNodeValue());
+                            appObject.put("manifestType", "connection");
+                            appsArray.put(appObject);
+                        }
+                    } catch (SAXException e) {
+                        e.printStackTrace();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                } catch (BackingStoreException e) {
+                    throw new RuntimeException(e);
+                } catch (JSONException e) {
+                    throw new RuntimeException(e);
+                }
+                return appsArray;
+            });
 
-	public void clientGetAllClientsInContextGroup() throws Exception {
-		CompletionStage<ClientIdentity[]> getContextFuture = desktopConnection.getInterop().connect(this.platformId)
-				.thenCompose(client -> {
-					return client.joinContextGroup("red").thenCompose(v -> {
-						return client.getAllClientsInContextGroup("red");
-					});
-				});
+            client.register("launchApp", (action, payload, senderIdentity) -> {
+                try {
+                    OutputStream os = new ByteArrayOutputStream();
+                    FrameMonitor.pref.exportSubtree(os);
 
-		ClientIdentity[] clientIdentity = getContextFuture.toCompletableFuture().get(10, TimeUnit.SECONDS);
-	}
+                    String payloadString = os.toString();
+                    payloadString = payloadString.replace("\\r\\n", "");
+                    payloadString = payloadString.replace("\\\"", "\"");
+                    payloadString = payloadString.replace("\\/", "/");
+                    payloadString = payloadString.replaceAll("<map/>", "");
+                    DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+                    DocumentBuilder builder = null;
+                    try {
+                        builder = factory.newDocumentBuilder();
+                    } catch (ParserConfigurationException e) {
+                        e.printStackTrace();
+                    }
 
-	public void clientJoinThenRemoveFromContextGroup() throws Exception {
-		AtomicInteger clientCntAfterJoin = new AtomicInteger(0);
-		AtomicInteger clientCntAfterRemove = new AtomicInteger(0);
-		CompletionStage<?> testFuture = desktopConnection.getInterop().connect(this.platformId).thenCompose(client -> {
-			return client.joinContextGroup("red").thenCompose(v -> {
-				return client.getAllClientsInContextGroup("red");
-			}).thenAccept(clients -> {
-				clientCntAfterJoin.set(clients.length);
-			}).thenCompose(v -> {
-				return client.removeFromContextGroup();
-			}).thenCompose(v -> {
-				return client.getAllClientsInContextGroup("red");
-			}).thenAccept(clients -> {
-				clientCntAfterRemove.set(clients.length);
-			});
-		});
+                    try {
+                        Document doc = builder.parse(new InputSource(new StringReader(payloadString)));
+                        NodeList apps = doc.getElementsByTagName("root").item(0).getChildNodes().item(1)
+                                .getChildNodes();
+                        for (int i = 3; i < apps.getLength(); i += 2) {
+                            if (((JSONObject) payload).get("appId")
+                                    .equals(apps.item(i).getAttributes().item(0).getNodeValue())) {
+                                String x = apps.item(i).getChildNodes().item(1).getChildNodes().item(1).getAttributes()
+                                        .item(1).getNodeValue();
+                                String y = apps.item(i).getChildNodes().item(1).getChildNodes().item(3).getAttributes()
+                                        .item(1).getNodeValue();
+                                String width = apps.item(i).getChildNodes().item(1).getChildNodes().item(5)
+                                        .getAttributes().item(1).getNodeValue();
+                                String height = apps.item(i).getChildNodes().item(1).getChildNodes().item(7)
+                                        .getAttributes().item(1).getNodeValue();
+                                Main.createFrame(apps.item(i).getAttributes().item(0).getNodeValue(),
+                                        Integer.parseInt(x), Integer.parseInt(y), Integer.parseInt(width),
+                                        Integer.parseInt(height), Integer.parseInt(width),
+                                        Integer.parseInt(height),
+                                        Integer.parseInt(width),
+                                        Integer.parseInt(height));
+                            }
+                        }
+                    } catch (SAXException e) {
+                        e.printStackTrace();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                } catch (BackingStoreException e) {
+                    throw new RuntimeException(e);
+                } catch (JSONException e) {
+                    throw new RuntimeException(e);
+                }
+                return null;
+            });
+        });
+    }
 
-		testFuture.toCompletableFuture().get(10, TimeUnit.SECONDS);
-	}
+    public CompletionStage<ContextGroupInfo[]> clientGetContextGroupInfo() {
+        return desktopConnection.getInterop().connect(this.platformId)
+                .thenCompose(client -> client.getContextGroups());
+    }
 
-	public void clientSetContext(String group, String ticker, String platformName) throws Exception {
-		Context context = new Context();
-		JSONObject contextId = new JSONObject();
-		contextId.put("ticker", ticker);
-		context.setId(contextId);
-		var name = "Unknown";
-		if(ticker.equals("AAPL")) {
-			name = "Apple Inc.";
-		} else if(ticker.equals("MSFT")) {
-			name = "Microsoft Corporation";
-		} else if(ticker.equals("GOOGL")) {
-			name = "Alphabet Inc.";
-		} else if(ticker.equals("TSLA")) {
-			name = "Tesla Inc.";
-		}
-		context.setName(name);
-		context.setType("fdc3.instrument");
-		CompletionStage<Void> setContextFuture = desktopConnection.getInterop().connect(platformName)
-				.thenCompose(client -> {
-					return client.getContextGroups().thenCompose(groups -> {
-						return client.joinContextGroup(group).thenCompose(v -> {
-							return client.setContext(context);
-						});
-					});
-				});
+    public void clientSetContext(String group, String ticker, String platformName) throws Exception {
+        Context context = new Context();
+        JSONObject contextId = new JSONObject();
+        contextId.put("ticker", ticker);
+        context.setId(contextId);
+        var name = "Unknown";
+        if(ticker.equals("AAPL")) {
+            name = "Apple Inc.";
+        } else if(ticker.equals("MSFT")) {
+            name = "Microsoft Corporation";
+        } else if(ticker.equals("GOOGL")) {
+            name = "Alphabet Inc.";
+        } else if(ticker.equals("TSLA")) {
+            name = "Tesla Inc.";
+        }
+        context.setName(name);
+        context.setType("fdc3.instrument");
+        CompletionStage<Void> setContextFuture = desktopConnection.getInterop().connect(platformName)
+                .thenCompose(client -> {
+                    return client.joinContextGroup(group).thenCompose(v -> {
+                        return client.setContext(context);
+                    });
+                });
 
-		setContextFuture.toCompletableFuture().get(10, TimeUnit.SECONDS);
-	}
+        setContextFuture.toCompletableFuture().get(10, TimeUnit.SECONDS);
+    }
 
-	public void clientAddContextListener() throws Exception {
-		Context context = new Context();
-		JSONObject contextId = new JSONObject();
-		contextId.put("ticker", "WMT");
-		context.setId(contextId);
-		context.setName("MyName");
-		context.setType("instrument");
+    public void joinAllGroups(String color, Main JT) {
+        CompletableFuture<Context> listenerInvokedFuture = new CompletableFuture<>();
+        desktopConnection.getInterop().connect(platformId).thenCompose(client -> {
+            return client.getContextGroups().thenCompose(groups -> {
+                return client.joinContextGroup(color).thenCompose(v -> {
+                    return client.addContextListener(ctx -> {
+                        System.out.print(color + ctx.getId());
+                        JT.updateTicker(ctx.getId());
+                        listenerInvokedFuture.complete(ctx);
+                    });
+                });
+            });
+        });
+    }
 
-		CompletableFuture<Context> listenerInvokedFuture = new CompletableFuture<>();
+    public void clientFireIntent(String intent, String type, String typeValue, String platformName) throws Exception {
+        Context context = new Context();
+        JSONObject contextId = new JSONObject();
+        contextId.put("ticker", typeValue);
+        context.setId(contextId);
+        var name = "Unknown";
+        if(typeValue.equals("AAPL")) {
+            name = "Apple Inc.";
+        } else if(typeValue.equals("MSFT")) {
+            name = "Microsoft Corporation";
+        } else if(typeValue.equals("GOOGL")) {
+            name = "Alphabet Inc.";
+        } else if(typeValue.equals("TSLA")) {
+            name = "Tesla Inc.";
+        }
+        context.setName(name);
+        context.setType("fdc3.instrument");
 
-		desktopConnection.getInterop().connect(this.platformId).thenCompose(client -> {
-			return client.addContextListener(ctx -> {
-				listenerInvokedFuture.complete(ctx);
-			}).thenApply(v -> {
-				return client;
-			});
-		}).thenCompose(client -> {
-			return client.joinContextGroup("red").thenCompose(v -> {
-				return client.setContext(context);
-			});
-		});
-
-		Context ctx = listenerInvokedFuture.toCompletableFuture().get(10, TimeUnit.SECONDS);
-	}
-
-	public void joinAllGroups(String color, Main JT) {
-		CompletableFuture<Context> listenerInvokedFuture = new CompletableFuture<>();
-		desktopConnection.getInterop().connect(platformId).thenCompose(client -> {
-			return client.getContextGroups().thenCompose(groups -> {
-				return client.joinContextGroup(color).thenCompose(v -> {
-					return client.addContextListener(ctx -> {
-						System.out.print(color + ctx.getId());
-						JT.updateTicker(ctx.getId());
-						listenerInvokedFuture.complete(ctx);
-					});
-				});
-			});
-		});
-	}
-
-	public void clientFireIntent(String intent, String type, String typeValue, String platformName) throws Exception {
-		Context context = new Context();
-		JSONObject contextId = new JSONObject();
-		contextId.put("ticker", typeValue);
-		context.setId(contextId);
-		var name = "Unknown";
-		if(typeValue.equals("AAPL")) {
-			name = "Apple Inc.";
-		} else if(typeValue.equals("MSFT")) {
-			name = "Microsoft Corporation";
-		} else if(typeValue.equals("GOOGL")) {
-			name = "Alphabet Inc.";
-		} else if(typeValue.equals("TSLA")) {
-			name = "Tesla Inc.";
-		}
-		context.setName(name);
-		context.setType("fdc3.instrument");
-
-		Intent intentToRaise = new Intent();
-		intentToRaise.setContext(context);
-		intentToRaise.setName(intent);
-		CompletionStage<Void> fireIntentFuture = desktopConnection.getInterop().connect(platformName)
+        Intent intentToRaise = new Intent();
+        intentToRaise.setContext(context);
+        intentToRaise.setName(intent);
+        CompletionStage<Void> fireIntentFuture = desktopConnection.getInterop().connect(platformName)
             .thenCompose(client -> {
                 return client.fireIntent(intentToRaise);
             });
 
-    	fireIntentFuture.toCompletableFuture().get(10, TimeUnit.SECONDS);
-	}
+        fireIntentFuture.toCompletableFuture().get(10, TimeUnit.SECONDS);
+    }
 
-	public void addIntentListener(String platformName, Main JT) throws Exception {
+    public void addIntentListener(String platformName, Main JT) throws Exception {
         desktopConnection.getInterop().connect(platformName).thenCompose(client -> {
             return client.registerIntentListener("ViewInstrument", intent -> {
                 Context context = intent.getContext();
                 System.out.println("Received intent: " + intent.getName());
                 System.out.println("Context: " + context.getId());
-				JT.updateTicker(context.getId());
-				JT.updateReceivedIntent(intent.getName());
+                JT.updateTicker(context.getId());
+                JT.updateReceivedIntent(intent.getName());
             });
         }).toCompletableFuture().get(10, TimeUnit.SECONDS);
     }
-
-
 }
