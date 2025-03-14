@@ -1,4 +1,5 @@
 package com.openfin.starter.java;
+
 import com.openfin.desktop.snapshot.SnapshotSource;
 import com.openfin.desktop.interop.ContextGroupInfo;
 import org.json.JSONException;
@@ -27,11 +28,10 @@ public class Main {
     static int minWidth = 400;
     static int minHeight = 400;
 
-    static List<JFrame> windows = new ArrayList<>();
 
     JComboBox<String> tickersCB;
     JComboBox<String> JoinChannelCB;
-    JComboBox<String> appsCB;
+    JComboBox<Apps.App> appsCB;
     String platformUuid;
     String runtimeUuid;
     boolean registerIntentListener = false;
@@ -85,8 +85,8 @@ public class Main {
         JoinChannelCB.putClientProperty("join", true);
         JoinChannelCB.setSelectedIndex(-1);
 
-        String[] appStrings = {"App 1", "App 2", "App 3"};
-        appsCB = new JComboBox<>(appStrings);
+        Apps apps = new Apps();
+        appsCB = new JComboBox<>(apps.getAppList().toArray(new Apps.App[0]));
         appsCB.putClientProperty("app", true);
         appsCB.setSelectedIndex(-1);
 
@@ -124,8 +124,10 @@ public class Main {
         JButton openAppButton = new JButton("Open App");
         openAppButton.setEnabled(false); // Initially disabled
         openAppButton.addActionListener(e -> {
-            JComboBox<?> cb = appsCB;
-            createFrame(cb.getSelectedItem().toString(), x, y, width, height, maxWidth, maxHeight, minWidth, minHeight);
+            Apps.App selectedApp = (Apps.App) appsCB.getSelectedItem();
+            if (selectedApp != null) {
+                createApp(selectedApp.getAppId());
+            }
         });
 
         // Enable the openAppButton only when an item is selected in appsCB
@@ -209,10 +211,10 @@ public class Main {
                 }
                 SwingUtilities.invokeLater(() -> {
                     JoinChannelCB.setModel(new DefaultComboBoxModel<>(ids.toArray(new String[0])));
-					JoinChannelCB.setSelectedIndex(-1);
-					JoinChannelCB.addActionListener(e -> {
-						interopConnection.joinAllGroups(JoinChannelCB.getSelectedItem().toString(), this);
-					});
+                    JoinChannelCB.setSelectedIndex(-1);
+                    JoinChannelCB.addActionListener(e -> {
+                        interopConnection.joinContextGroup(JoinChannelCB.getSelectedItem().toString());
+                    });
                 });
             }).exceptionally(ex -> {
                 ex.printStackTrace();
@@ -261,46 +263,72 @@ public class Main {
         mainApplication.logMessage("Register Intents: " + registerIntents);
         try {
             interopConnection.setup(mainApplication.platformUuid, mainApplication.runtimeUuid, () -> {
+                try {
+                    interopConnection.addContextListener(mainApplication).thenRun(() -> {
+                        mainApplication.logMessage("Context listener registered.");
+                    }).exceptionally(ex -> {
+                        mainApplication.logMessage("Context listener not registered.");
+                        ex.printStackTrace();
+                        return null;
+                    });
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
                 mainApplication.enableDropdowns();
                 mainApplication.fetchChannelColors();
-				mainApplication.logMessage("Connected to Runtime.");
-				SnapshotSource snapshotSource = new SnapshotSource(interopConnection.desktopConnection);
-				snapshotSource.initSnapshotSourceProviderAsync(mainApplication.runtimeUuid, interopConnection);
-				if (registerIntents) {
-					try {
-						interopConnection.addIntentListener(mainApplication.platformUuid, mainApplication).thenRun(() -> {
+                mainApplication.logMessage("Connected to Runtime.");
+                try {
+                    SnapshotSource snapshotSource = new SnapshotSource(interopConnection.desktopConnection);
+                    snapshotSource.initSnapshotSourceProviderAsync(mainApplication.runtimeUuid, interopConnection);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                if (registerIntents) {
+                    try {
+                        interopConnection.addIntentListener(mainApplication.platformUuid, mainApplication).thenRun(() -> {
                             mainApplication.logMessage("Intent listener registered.");
                         }).exceptionally(ex -> {
-							mainApplication.logMessage("Intent listener not registered.");
+                            mainApplication.logMessage("Intent listener not registered.");
                             ex.printStackTrace();
                             return null;
                         });
-					} catch (Exception e) {
-						e.printStackTrace();
-					}
-				}
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+                try {
+                    interopConnection.createChannelClient(mainApplication.platformUuid);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             });
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    public static void createFrame(String name, int x, int y, int width, int height, int maxWidth, int maxHeight, int minWidth, int minHeight) {
-        JFrame frame = new JFrame("Java Starter: Child Window");
+    public static void createApp(String appId) {
+        Apps apps = new Apps();
+        Apps.App app = apps.getApp(appId);
+        createFrame(app.getTitle(), appId, x, y, app.getWidth(), app.getHeight(), app.getMaxWidth(), app.getMaxHeight(), app.getMinWidth(), app.getMinHeight());
+    }
+
+    public static void createApp(String appId, int x, int y, int width, int height) {
+        Apps apps = new Apps();
+        Apps.App app = apps.getApp(appId);
+        if(app != null) {
+            createFrame(app.getTitle(), appId, x, y, width, height, app.getMaxWidth(), app.getMaxHeight(), app.getMinWidth(), app.getMinHeight());
+        }
+    }
+
+    public static void createFrame(String name, String appId, int x, int y, int width, int height, int maxWidth, int maxHeight, int minWidth, int minHeight) {
+        JFrame frame = new JFrame(name);
         frame.setBounds(x, y, width, height);
-        frame.setName(name);
+        frame.setName(appId);
         frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         frame.setMaximumSize(new Dimension(maxWidth, maxHeight));
         frame.setMinimumSize(new Dimension(minWidth, minHeight));
-        FrameMonitor.registerFrame(frame, frame.getName(), x, y, width, height);
-        windows.add(frame);
         frame.setVisible(true);
-        frame.addWindowListener(new WindowAdapter() {
-            @Override
-            public void windowClosed(WindowEvent e) {
-                windows.remove(frame);
-            }
-        });
         frame.addComponentListener(new ComponentAdapter() {
             @Override
             public void componentResized(ComponentEvent e) {
@@ -313,9 +341,16 @@ public class Main {
     }
 
     public static void CloseAllWindows() {
-        for (JFrame w : windows) {
-            w.setVisible(false);
-            w.dispose();
+        Frame[] frames = Frame.getFrames();
+        for (Frame frame : frames) {
+            if (frame instanceof JFrame) {
+                JFrame jFrame = (JFrame) frame;
+                var name = jFrame.getName();
+                if (name != null && !name.isEmpty() && !name.equals("frame0")) {
+                    jFrame.setVisible(false);
+                    jFrame.dispose();
+                }
+            }
         }
     }
 }

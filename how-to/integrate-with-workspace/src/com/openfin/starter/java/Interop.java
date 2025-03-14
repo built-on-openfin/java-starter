@@ -1,13 +1,10 @@
 package com.openfin.starter.java;
-import java.io.*;
+import java.awt.Frame;
 import java.lang.System;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.prefs.BackingStoreException;
 import com.openfin.desktop.*;
-import com.openfin.desktop.ClientIdentity;
 import com.openfin.desktop.snapshot.SnapshotSourceProvider;
 
 import org.json.JSONArray;
@@ -19,20 +16,17 @@ import org.slf4j.LoggerFactory;
 import com.openfin.desktop.interop.Context;
 import com.openfin.desktop.interop.ContextGroupInfo;
 import com.openfin.desktop.interop.Intent;
+import com.openfin.desktop.interop.InteropClient;
 import com.openfin.desktop.channel.*;
-import org.w3c.dom.Document;
-import org.w3c.dom.NodeList;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
+import javax.swing.JFrame;
 
 public class Interop implements SnapshotSourceProvider {
     private static Logger logger = LoggerFactory.getLogger(Interop.class.getName());
     public static DesktopConnection desktopConnection;
-    private String platformId;
+    private Apps apps = new Apps();
+    InteropClient client;
+
 
     public void setup(String platformId, String connectionUuid, Runnable onReadyCallback) throws Exception {
         logger.debug("starting");
@@ -45,9 +39,12 @@ public class Interop implements SnapshotSourceProvider {
             @Override
             public void onReady() {
                 logger.info("Desktop Connection Ready");
-                if (onReadyCallback != null) {
-                    onReadyCallback.run();
-                }
+                desktopConnection.getInterop().connect(platformId).thenAccept(interopClient -> {
+                    client = interopClient;
+                    if (onReadyCallback != null) {
+                        onReadyCallback.run();
+                    }
+                });
             }
 
             @Override
@@ -69,66 +66,30 @@ public class Interop implements SnapshotSourceProvider {
 
             }
         }, 60);
-
-        this.platformId = platformId;
-        FrameMonitor.init();
-        createChannelClient(platformId);
     }
 
     @Override
     public JSONObject getSnapshot() {
         JSONArray appsArray = new JSONArray();
         try {
-            OutputStream os = new ByteArrayOutputStream();
-
-            FrameMonitor.pref.exportSubtree(os);
-
-            String payloadString = os.toString();
-            payloadString = payloadString.replace("\\r\\n", "");
-            payloadString = payloadString.replace("\\\"", "\"");
-            payloadString = payloadString.replace("\\/", "/");
-            payloadString = payloadString.replaceAll("<map/>", "");
-            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder builder = null;
-            try {
-                builder = factory.newDocumentBuilder();
-            } catch (ParserConfigurationException e) {
-                e.printStackTrace();
-            }
-
-            try {
-                Document doc = builder.parse(new InputSource(new StringReader(payloadString)));
-                NodeList apps = doc.getElementsByTagName("root").item(0).getChildNodes().item(1).getChildNodes();
-                for (int i = 3; i < apps.getLength(); i += 2) {
-                    JSONObject appObject = new JSONObject();
-                    appObject.put("appId", apps.item(i).getAttributes().item(0).getNodeValue());
-                    appObject.put("title", apps.item(i).getAttributes().item(0).getNodeValue());
-                    appObject.put("x", apps.item(i).getChildNodes().item(1).getChildNodes().item(1).getAttributes()
-                            .item(1).getNodeValue());
-                    appObject.put("y", apps.item(i).getChildNodes().item(1).getChildNodes().item(3).getAttributes()
-                            .item(1).getNodeValue());
-                    appObject.put("w", apps.item(i).getChildNodes().item(1).getChildNodes().item(5).getAttributes()
-                            .item(1).getNodeValue());
-                    appObject.put("h", apps.item(i).getChildNodes().item(1).getChildNodes().item(7).getAttributes()
-                            .item(1).getNodeValue());
-                    appObject.put("open", apps.item(i).getChildNodes().item(1).getChildNodes().item(9).getAttributes()
-                            .item(1).getNodeValue());
-                    appObject.put("description", apps.item(i).getAttributes().item(0).getNodeValue());
-                    appObject.put("manifestType", "connection");
-                    appsArray.put(appObject);
+            Frame[] frames = Frame.getFrames();
+            for (Frame frame : frames) {
+                if (frame instanceof JFrame) {
+                    JFrame jFrame = (JFrame) frame;
+                    var name = jFrame.getName();
+                    if (name != null && !name.isEmpty() && !name.equals("frame0")) {
+                        JSONObject appObject = new JSONObject();
+                        appObject.put("appId", jFrame.getName());
+                        appObject.put("title", jFrame.getTitle());
+                        appObject.put("x", jFrame.getX());
+                        appObject.put("y", jFrame.getY());
+                        appObject.put("w", jFrame.getWidth());
+                        appObject.put("h", jFrame.getHeight());
+                        appsArray.put(appObject);
+                    }
                 }
-            } catch (SAXException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
-                e.printStackTrace();
             }
-
-            return new JSONObject("{ snapshot: " + appsArray.toString() + " }");
-
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        } catch (BackingStoreException e) {
-            throw new RuntimeException(e);
+            return new JSONObject().put("snapshot", appsArray);
         } catch (JSONException e) {
             throw new RuntimeException(e);
         }
@@ -138,49 +99,11 @@ public class Interop implements SnapshotSourceProvider {
     public void applySnapshot(JSONObject snapshot) {
         try {
             Main.CloseAllWindows();
-            OutputStream os = new ByteArrayOutputStream();
-            FrameMonitor.pref.exportSubtree(os);
-
-            String payloadString = os.toString();
-            payloadString = payloadString.replace("\\r\\n", "");
-            payloadString = payloadString.replace("\\\"", "\"");
-            payloadString = payloadString.replace("\\/", "/");
-            payloadString = payloadString.replaceAll("<map/>", "");
-            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder builder = null;
-            try {
-                builder = factory.newDocumentBuilder();
-            } catch (ParserConfigurationException e) {
-                e.printStackTrace();
+            JSONArray childWindows = (JSONArray) snapshot.get("snapshot");
+            for (int i = 0; i < childWindows.length(); i++) {
+                JSONObject app = (JSONObject) childWindows.get(i);
+                Main.createApp(app.getString("appId"), app.getInt("x"), app.getInt("y"), app.getInt("w"), app.getInt("h"));
             }
-
-            JSONArray ja = (JSONArray) snapshot.get("snapshot");
-            try {
-                Document doc = builder.parse(new InputSource(new StringReader(payloadString)));
-                NodeList apps = doc.getElementsByTagName("root").item(0).getChildNodes().item(1).getChildNodes();
-                JSONObject jo;
-                for (int i = 3; i < apps.getLength(); i += 2) {
-                    for (int j = 0; j < ja.length(); j++) {
-                        jo = (JSONObject) ja.get(j);
-                        if (jo.getString("appId").equals(apps.item(i).getAttributes().item(0).getNodeValue())) {
-                            if (Integer.parseInt(jo.getString("open")) == 1)
-                                Main.createFrame(apps.item(i).getAttributes().item(0).getNodeValue(),
-                                        Integer.parseInt(jo.getString("x")), Integer.parseInt(jo.getString("y")),
-                                        Integer.parseInt(jo.getString("w")), Integer.parseInt(jo.getString("h")),
-                                        Integer.parseInt(jo.getString("w")), Integer.parseInt(jo.getString("h")),
-                                        Integer.parseInt(jo.getString("w")), Integer.parseInt(jo.getString("h")));
-                        }
-                    }
-                }
-            } catch (SAXException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        } catch (BackingStoreException e) {
-            throw new RuntimeException(e);
         } catch (JSONException e) {
             throw new RuntimeException(e);
         }
@@ -188,7 +111,7 @@ public class Interop implements SnapshotSourceProvider {
 
     public void createChannelClient(String platformId) throws JSONException {
 
-        desktopConnection.getChannel(platformId.toLowerCase() + "-connection").connectAsync().thenAccept(client -> {
+        desktopConnection.getChannel(platformId.toLowerCase() + "-workspace-connection").connectAsync().thenAccept(client -> {
             client.addChannelListener(new ChannelListener() {
                 @Override
                 public void onChannelConnect(ConnectionEvent connectionEvent) {
@@ -202,112 +125,27 @@ public class Interop implements SnapshotSourceProvider {
             });
 
             client.register("getApps", (action, payload, senderIdentity) -> {
-                JSONArray appsArray = new JSONArray();
                 try {
-                    OutputStream os = new ByteArrayOutputStream();
-                    FrameMonitor.pref.exportSubtree(os);
-
-                    String payloadString = os.toString();
-                    payloadString = payloadString.replace("\\r\\n", "");
-                    payloadString = payloadString.replace("\\\"", "\"");
-                    payloadString = payloadString.replace("\\/", "/");
-                    payloadString = payloadString.replaceAll("<map/>", "");
-                    DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-                    DocumentBuilder builder = null;
-                    try {
-                        builder = factory.newDocumentBuilder();
-                    } catch (ParserConfigurationException e) {
-                        e.printStackTrace();
-                    }
-
-                    try {
-                        Document doc = builder.parse(new InputSource(new StringReader(payloadString)));
-                        NodeList apps = doc.getElementsByTagName("root").item(0).getChildNodes().item(1)
-                                .getChildNodes();
-                        for (int i = 3; i < apps.getLength(); i += 2) {
-                            JSONObject appObject = new JSONObject();
-                            appObject.put("appId", apps.item(i).getAttributes().item(0).getNodeValue());
-                            appObject.put("title", apps.item(i).getAttributes().item(0).getNodeValue());
-                            appObject.put("description", apps.item(i).getAttributes().item(0).getNodeValue());
-                            appObject.put("manifestType", "connection");
-                            appsArray.put(appObject);
-                        }
-                    } catch (SAXException e) {
-                        e.printStackTrace();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                } catch (BackingStoreException e) {
-                    throw new RuntimeException(e);
-                } catch (JSONException e) {
+                    return apps.getAppDirectory();
+                } catch (Error e) {
                     throw new RuntimeException(e);
                 }
-                return appsArray;
             });
 
             client.register("launchApp", (action, payload, senderIdentity) -> {
                 try {
-                    OutputStream os = new ByteArrayOutputStream();
-                    FrameMonitor.pref.exportSubtree(os);
-
-                    String payloadString = os.toString();
-                    payloadString = payloadString.replace("\\r\\n", "");
-                    payloadString = payloadString.replace("\\\"", "\"");
-                    payloadString = payloadString.replace("\\/", "/");
-                    payloadString = payloadString.replaceAll("<map/>", "");
-                    DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-                    DocumentBuilder builder = null;
-                    try {
-                        builder = factory.newDocumentBuilder();
-                    } catch (ParserConfigurationException e) {
-                        e.printStackTrace();
-                    }
-
-                    try {
-                        Document doc = builder.parse(new InputSource(new StringReader(payloadString)));
-                        NodeList apps = doc.getElementsByTagName("root").item(0).getChildNodes().item(1)
-                                .getChildNodes();
-                        for (int i = 3; i < apps.getLength(); i += 2) {
-                            if (((JSONObject) payload).get("appId")
-                                    .equals(apps.item(i).getAttributes().item(0).getNodeValue())) {
-                                String x = apps.item(i).getChildNodes().item(1).getChildNodes().item(1).getAttributes()
-                                        .item(1).getNodeValue();
-                                String y = apps.item(i).getChildNodes().item(1).getChildNodes().item(3).getAttributes()
-                                        .item(1).getNodeValue();
-                                String width = apps.item(i).getChildNodes().item(1).getChildNodes().item(5)
-                                        .getAttributes().item(1).getNodeValue();
-                                String height = apps.item(i).getChildNodes().item(1).getChildNodes().item(7)
-                                        .getAttributes().item(1).getNodeValue();
-                                Main.createFrame(apps.item(i).getAttributes().item(0).getNodeValue(),
-                                        Integer.parseInt(x), Integer.parseInt(y), Integer.parseInt(width),
-                                        Integer.parseInt(height), Integer.parseInt(width),
-                                        Integer.parseInt(height),
-                                        Integer.parseInt(width),
-                                        Integer.parseInt(height));
-                            }
-                        }
-                    } catch (SAXException e) {
-                        e.printStackTrace();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                } catch (BackingStoreException e) {
-                    throw new RuntimeException(e);
-                } catch (JSONException e) {
+                    var appId = ((JSONObject) payload).get("appId").toString();
+                    Main.createApp(appId);
+                    return null;
+                } catch (Error e) {
                     throw new RuntimeException(e);
                 }
-                return null;
             });
         });
     }
 
     public CompletionStage<ContextGroupInfo[]> clientGetContextGroupInfo() {
-        return desktopConnection.getInterop().connect(this.platformId)
-                .thenCompose(client -> client.getContextGroups());
+        return client.getContextGroups();
     }
 
     public void clientSetContext(String group, String ticker, String platformName) throws Exception {
@@ -327,28 +165,14 @@ public class Interop implements SnapshotSourceProvider {
         }
         context.setName(name);
         context.setType("fdc3.instrument");
-        CompletionStage<Void> setContextFuture = desktopConnection.getInterop().connect(platformName)
-                .thenCompose(client -> {
-                    return client.joinContextGroup(group).thenCompose(v -> {
-                        return client.setContext(context);
-                    });
-                });
+        CompletionStage<Void> setContextFuture = client.setContext(context);
 
         setContextFuture.toCompletableFuture().get(10, TimeUnit.SECONDS);
     }
 
-    public void joinAllGroups(String color, Main JT) {
-        CompletableFuture<Context> listenerInvokedFuture = new CompletableFuture<>();
-        desktopConnection.getInterop().connect(platformId).thenCompose(client -> {
-            return client.getContextGroups().thenCompose(groups -> {
-                return client.joinContextGroup(color).thenCompose(v -> {
-                    return client.addContextListener(ctx -> {
-                        System.out.print(color + ctx.getId());
-                        JT.updateTicker(ctx.getId());
-                        listenerInvokedFuture.complete(ctx);
-                    });
-                });
-            });
+    public void joinContextGroup(String groupId) {
+         client.joinContextGroup(groupId).thenAccept(contextGroupInfo -> {
+            logger.info("Joined context group");
         });
     }
 
@@ -373,24 +197,31 @@ public class Interop implements SnapshotSourceProvider {
         Intent intentToRaise = new Intent();
         intentToRaise.setContext(context);
         intentToRaise.setName(intent);
-        CompletionStage<Void> fireIntentFuture = desktopConnection.getInterop().connect(platformName)
-            .thenCompose(client -> {
-                return client.fireIntent(intentToRaise);
-            });
+        CompletionStage<Void> fireIntentFuture = client.fireIntent(intentToRaise);
 
         fireIntentFuture.toCompletableFuture().get(10, TimeUnit.SECONDS);
     }
 
+    public CompletionStage<Void> addContextListener(Main JT) {
+        return client.addContextListener(context -> {
+            System.out.println("Received context: " + context.getId());
+            if(context.getId().has("ticker")) {
+                JT.updateTicker(context.getId());
+            }
+        }).exceptionally(ex -> {
+            ex.printStackTrace();
+            return null;
+        });
+    }
+
     public CompletionStage<Void> addIntentListener(String platformName, Main JT) {
-        return desktopConnection.getInterop().connect(platformName).thenCompose(client -> {
             return client.registerIntentListener("ViewInstrument", intent -> {
                 Context context = intent.getContext();
                 System.out.println("Received intent: " + intent.getName());
                 System.out.println("Context: " + context.getId());
                 JT.updateTicker(context.getId());
                 JT.updateReceivedIntent(intent.getName());
-            });
-        }).exceptionally(ex -> {
+            }).exceptionally(ex -> {
             ex.printStackTrace();
             return null;
         });
