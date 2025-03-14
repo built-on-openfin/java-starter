@@ -13,11 +13,19 @@
         },
         {
             "type": "java",
-            "name": "Main",
+            "name": "Single Instance Id",
             "request": "launch",
             "mainClass": "com.openfin.starter.java.Main",
             "projectName": "test",
             "args": "workspaceUUID=workspace-platform-starter nativeUUID=java-interop-example registerIntents"
+        },
+        {
+            "type": "java",
+            "name": "Multi Instance Id",
+            "request": "launch",
+            "mainClass": "com.openfin.starter.java.Main",
+            "projectName": "test",
+            "args": "workspaceUUID=workspace-platform-starter nativeUUID=java-interop-example/62d2b603-0b65-411e-af4e-014528af75e6 registerIntents"
         },
         {
             "type": "java",
