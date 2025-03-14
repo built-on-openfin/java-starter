@@ -84,9 +84,6 @@ public class Main {
         JoinChannelCB = new JComboBox<>(new String[]{});
         JoinChannelCB.putClientProperty("join", true);
         JoinChannelCB.setSelectedIndex(-1);
-        JoinChannelCB.addActionListener(e -> {
-            interopConnection.joinAllGroups(JoinChannelCB.getSelectedItem().toString(), this);
-        });
 
         String[] appStrings = {"App 1", "App 2", "App 3"};
         appsCB = new JComboBox<>(appStrings);
@@ -200,13 +197,6 @@ public class Main {
         frame.getContentPane().add(panel);
         frame.pack();
         frame.setVisible(true);
-
-        Interop interop = new Interop();
-        try {
-            interop.addIntentListener(platformUuid, this);
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
     }
 
     private void fetchChannelColors() {
@@ -220,6 +210,9 @@ public class Main {
                 SwingUtilities.invokeLater(() -> {
                     JoinChannelCB.setModel(new DefaultComboBoxModel<>(ids.toArray(new String[0])));
 					JoinChannelCB.setSelectedIndex(-1);
+					JoinChannelCB.addActionListener(e -> {
+						interopConnection.joinAllGroups(JoinChannelCB.getSelectedItem().toString(), this);
+					});
                 });
             }).exceptionally(ex -> {
                 ex.printStackTrace();
@@ -271,12 +264,22 @@ public class Main {
                 mainApplication.enableDropdowns();
                 mainApplication.fetchChannelColors();
 				mainApplication.logMessage("Connected to Runtime.");
+				SnapshotSource snapshotSource = new SnapshotSource(interopConnection.desktopConnection);
+				snapshotSource.initSnapshotSourceProviderAsync(mainApplication.runtimeUuid, interopConnection);
+				if (registerIntents) {
+					try {
+						interopConnection.addIntentListener(mainApplication.platformUuid, mainApplication).thenRun(() -> {
+                            mainApplication.logMessage("Intent listener registered.");
+                        }).exceptionally(ex -> {
+							mainApplication.logMessage("Intent listener not registered.");
+                            ex.printStackTrace();
+                            return null;
+                        });
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				}
             });
-            SnapshotSource snapshotSource = new SnapshotSource(interopConnection.desktopConnection);
-            snapshotSource.initSnapshotSourceProviderAsync(mainApplication.runtimeUuid, interopConnection);
-            if (registerIntents) {
-                interopConnection.addIntentListener(mainApplication.platformUuid, mainApplication);
-            }
         } catch (IOException e) {
             e.printStackTrace();
         }

@@ -381,8 +381,8 @@ public class Interop implements SnapshotSourceProvider {
         fireIntentFuture.toCompletableFuture().get(10, TimeUnit.SECONDS);
     }
 
-    public void addIntentListener(String platformName, Main JT) throws Exception {
-        desktopConnection.getInterop().connect(platformName).thenCompose(client -> {
+    public CompletionStage<Void> addIntentListener(String platformName, Main JT) {
+        return desktopConnection.getInterop().connect(platformName).thenCompose(client -> {
             return client.registerIntentListener("ViewInstrument", intent -> {
                 Context context = intent.getContext();
                 System.out.println("Received intent: " + intent.getName());
@@ -390,6 +390,9 @@ public class Interop implements SnapshotSourceProvider {
                 JT.updateTicker(context.getId());
                 JT.updateReceivedIntent(intent.getName());
             });
-        }).toCompletableFuture().get(10, TimeUnit.SECONDS);
+        }).exceptionally(ex -> {
+            ex.printStackTrace();
+            return null;
+        });
     }
 }

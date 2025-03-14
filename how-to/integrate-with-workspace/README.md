@@ -8,7 +8,7 @@ Please refer to the pom.xml file for the dependencies.
 ## Getting Started
 1. Clone this repo
 2. Install the OpenFin Java Adapter and its dependencies using `mvn install`
-3. Start Java-Starter, JavaTest contains the main method
+3. Start Java-Starter, the java starter contains the main method
 4. To package into a jar you can use mvn package (or the tools provided by your IDE to execute the command). 
 
 ## IDEs
