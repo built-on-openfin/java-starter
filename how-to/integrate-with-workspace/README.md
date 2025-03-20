@@ -8,7 +8,7 @@ Please refer to the pom.xml file for the dependencies.
 ## Getting Started
 1. Clone this repo
 2. Install the OpenFin Java Adapter and its dependencies using `mvn install`
-3. Start Java-Starter, JavaTest contains the main method
+3. Start Java-Starter, the java starter contains the main method
 4. To package into a jar you can use mvn package (or the tools provided by your IDE to execute the command). 
 
 ## IDEs
@@ -31,12 +31,7 @@ This example supports the following command line arguments:
 | [How To Listen/Transmit context](Docs/ContextSharing.md)           | This gives an example of how a Native Apps can integrate with a workspace platform (e.g. provide snapshot data from a native app to a platform, provide search results or call actions against a platform).|
 | [How To Register apps with workspace](Docs/RegisterApps.md)        | This gives an example of how a Native Apps can integrate with a workspace platform (e.g. provide snapshot data from a native app to a platform, provide search results or call actions against a platform).|
 
-## Architecture
-
-Window location is tracked using FrameMonitor.java. This class is responsible for listening to the window's frame events and updating the window's location to local [Preferences](https://docs.oracle.com/javase/7/docs/api/java/util/prefs/Preferences.html).
-
-
 ## Documentation
+
 - https://developers.openfin.co/of-docs/docs/java-api
 - https://search.maven.org/artifact/co.openfin/openfin-desktop-java-adapter
-
