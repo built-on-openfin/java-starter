@@ -1,4 +1,5 @@
 package com.openfin.starter.java;
+
 import java.awt.Frame;
 import java.lang.System;
 import java.util.concurrent.CompletableFuture;
@@ -26,7 +27,6 @@ public class Interop implements SnapshotSourceProvider {
     public static DesktopConnection desktopConnection;
     private Apps apps = new Apps();
     InteropClient client;
-
 
     public void setup(String platformId, String connectionUuid, Runnable onReadyCallback) throws Exception {
         logger.debug("starting");
@@ -102,7 +102,8 @@ public class Interop implements SnapshotSourceProvider {
             JSONArray childWindows = (JSONArray) snapshot.get("snapshot");
             for (int i = 0; i < childWindows.length(); i++) {
                 JSONObject app = (JSONObject) childWindows.get(i);
-                Main.createApp(app.getString("appId"), app.getInt("x"), app.getInt("y"), app.getInt("w"), app.getInt("h"));
+                Main.createApp(app.getString("appId"), app.getInt("x"), app.getInt("y"), app.getInt("w"),
+                        app.getInt("h"));
             }
         } catch (JSONException e) {
             throw new RuntimeException(e);
@@ -111,41 +112,52 @@ public class Interop implements SnapshotSourceProvider {
 
     public void createChannelClient(String platformId) throws JSONException {
 
-        desktopConnection.getChannel(platformId.toLowerCase() + "-workspace-connection").connectAsync().thenAccept(client -> {
-            client.addChannelListener(new ChannelListener() {
-                @Override
-                public void onChannelConnect(ConnectionEvent connectionEvent) {
-                    logger.info("channel connected {}", connectionEvent.getChannelId());
-                }
+        desktopConnection.getChannel(platformId.toLowerCase() + "-workspace-connection").connectAsync()
+                .thenAccept(client -> {
+                    client.addChannelListener(new ChannelListener() {
+                        @Override
+                        public void onChannelConnect(ConnectionEvent connectionEvent) {
+                            logger.info("channel connected {}", connectionEvent.getChannelId());
+                        }
 
-                @Override
-                public void onChannelDisconnect(ConnectionEvent connectionEvent) {
-                    logger.info("channel disconnected {}", connectionEvent.getChannelId());
-                }
-            });
+                        @Override
+                        public void onChannelDisconnect(ConnectionEvent connectionEvent) {
+                            logger.info("channel disconnected {}", connectionEvent.getChannelId());
+                        }
+                    });
 
-            client.register("getApps", (action, payload, senderIdentity) -> {
-                try {
-                    return apps.getAppDirectory();
-                } catch (Error e) {
-                    throw new RuntimeException(e);
-                }
-            });
+                    client.register("getApps", (action, payload, senderIdentity) -> {
+                        try {
+                            return apps.getAppDirectory();
+                        } catch (Error e) {
+                            throw new RuntimeException(e);
+                        }
+                    });
 
-            client.register("launchApp", (action, payload, senderIdentity) -> {
-                try {
-                    var appId = ((JSONObject) payload).get("appId").toString();
-                    Main.createApp(appId);
-                    return null;
-                } catch (Error e) {
-                    throw new RuntimeException(e);
-                }
-            });
-        });
+                    client.register("launchApp", (action, payload, senderIdentity) -> {
+                        try {
+                            var appId = ((JSONObject) payload).get("appId").toString();
+                            Main.createApp(appId);
+                            return null;
+                        } catch (Error e) {
+                            throw new RuntimeException(e);
+                        }
+                    });
+                });
     }
 
     public CompletionStage<ContextGroupInfo[]> clientGetContextGroupInfo() {
-        return client.getContextGroups();
+        // CSE-1141: Update Java Starter so it filters out context groups that do not
+        // have meta data
+        return client.getContextGroups().thenApply(groups -> {
+            return java.util.Arrays.stream(groups)
+                    .filter(group -> {
+                        // Filter out groups that do not have a color set in their display metadata
+                        return group.getDisplayMetadata().getColor() != null
+                                && !group.getDisplayMetadata().getColor().isEmpty();
+                    })
+                    .toArray(ContextGroupInfo[]::new);
+        });
     }
 
     public void clientSetContext(String group, String ticker, String platformName) throws Exception {
@@ -154,13 +166,13 @@ public class Interop implements SnapshotSourceProvider {
         contextId.put("ticker", ticker);
         context.setId(contextId);
         var name = "Unknown";
-        if(ticker.equals("AAPL")) {
+        if (ticker.equals("AAPL")) {
             name = "Apple Inc.";
-        } else if(ticker.equals("MSFT")) {
+        } else if (ticker.equals("MSFT")) {
             name = "Microsoft Corporation";
-        } else if(ticker.equals("GOOGL")) {
+        } else if (ticker.equals("GOOGL")) {
             name = "Alphabet Inc.";
-        } else if(ticker.equals("TSLA")) {
+        } else if (ticker.equals("TSLA")) {
             name = "Tesla Inc.";
         }
         context.setName(name);
@@ -171,7 +183,7 @@ public class Interop implements SnapshotSourceProvider {
     }
 
     public void joinContextGroup(String groupId) {
-         client.joinContextGroup(groupId).thenAccept(contextGroupInfo -> {
+        client.joinContextGroup(groupId).thenAccept(contextGroupInfo -> {
             logger.info("Joined context group");
         });
     }
@@ -182,13 +194,13 @@ public class Interop implements SnapshotSourceProvider {
         contextId.put("ticker", typeValue);
         context.setId(contextId);
         var name = "Unknown";
-        if(typeValue.equals("AAPL")) {
+        if (typeValue.equals("AAPL")) {
             name = "Apple Inc.";
-        } else if(typeValue.equals("MSFT")) {
+        } else if (typeValue.equals("MSFT")) {
             name = "Microsoft Corporation";
-        } else if(typeValue.equals("GOOGL")) {
+        } else if (typeValue.equals("GOOGL")) {
             name = "Alphabet Inc.";
-        } else if(typeValue.equals("TSLA")) {
+        } else if (typeValue.equals("TSLA")) {
             name = "Tesla Inc.";
         }
         context.setName(name);
@@ -205,7 +217,7 @@ public class Interop implements SnapshotSourceProvider {
     public CompletionStage<Void> addContextListener(Main JT) {
         return client.addContextListener(context -> {
             System.out.println("Received context: " + context.getId());
-            if(context.getId().has("ticker")) {
+            if (context.getId().has("ticker")) {
                 JT.updateTicker(context.getId());
             }
         }).exceptionally(ex -> {
@@ -215,13 +227,13 @@ public class Interop implements SnapshotSourceProvider {
     }
 
     public CompletionStage<Void> addIntentListener(String platformName, Main JT) {
-            return client.registerIntentListener("ViewInstrument", intent -> {
-                Context context = intent.getContext();
-                System.out.println("Received intent: " + intent.getName());
-                System.out.println("Context: " + context.getId());
-                JT.updateTicker(context.getId());
-                JT.updateReceivedIntent(intent.getName());
-            }).exceptionally(ex -> {
+        return client.registerIntentListener("ViewInstrument", intent -> {
+            Context context = intent.getContext();
+            System.out.println("Received intent: " + intent.getName());
+            System.out.println("Context: " + context.getId());
+            JT.updateTicker(context.getId());
+            JT.updateReceivedIntent(intent.getName());
+        }).exceptionally(ex -> {
             ex.printStackTrace();
             return null;
         });
