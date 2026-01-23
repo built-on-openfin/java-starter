@@ -1,4 +1,4 @@
-package com.openfin.starter.java;
+package com.here.starter.java;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
