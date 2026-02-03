@@ -1,13 +1,13 @@
 # Java-Starter
-A starter repo providing examples of how to use the OpenFin Java Adapter.
-This repo contains a simple Java application that uses the OpenFin Java Adapter to launch an OpenFin application.
+A starter repo providing examples of how to use the HERE Java Adapter.
+This repo contains a simple Java application that uses the HERE Java Adapter to launch a HERE application.
 
-It uses maven as the build tool and the OpenFin Java Adapter is available on Maven Central. 
+It uses maven as the build tool and the HERE Java Adapter is available on Maven Central. 
 Please refer to the pom.xml file for the dependencies.
 
 ## Getting Started
 1. Clone this repo
-2. Install the OpenFin Java Adapter and its dependencies using `mvn install`
+2. Install the HERE Java Adapter and its dependencies using `mvn install`
 3. Start Java-Starter, the java starter contains the main method
 4. To package into a jar you can use mvn package (or the tools provided by your IDE to execute the command). 
 
@@ -33,5 +33,5 @@ This example supports the following command line arguments:
 
 ## Documentation
 
-- https://developers.openfin.co/of-docs/docs/java-api
+- https://resources.here.io/docs/core/adapters/java/
 - https://search.maven.org/artifact/co.openfin/openfin-desktop-java-adapter

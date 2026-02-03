@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>openfin.starter.integrate.workspace</groupId>
-  <artifactId>openfin.starter.integrate.workspace</artifactId>
+  <groupId>here.starter.integrate.workspace</groupId>
+  <artifactId>here.starter.integrate.workspace</artifactId>
   <version>0.0.1-SNAPSHOT</version>
   <build>
     <sourceDirectory>src</sourceDirectory>
@@ -20,7 +20,7 @@
         <configuration>
           <archive>
             <manifest>
-              <mainClass>com.openfin.starter.java.Main</mainClass>
+              <mainClass>com.here.starter.java.Main</mainClass>
               <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
             </manifest>
           </archive>

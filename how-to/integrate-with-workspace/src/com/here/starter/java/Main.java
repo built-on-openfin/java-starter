@@ -1,4 +1,4 @@
-package com.openfin.starter.java;
+package com.here.starter.java;
 
 import com.openfin.desktop.snapshot.SnapshotSource;
 import com.openfin.desktop.interop.ContextGroupInfo;
